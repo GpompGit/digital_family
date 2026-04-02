@@ -2,7 +2,7 @@
 
 > **Branch:** `claude/plan-database-schema-pe7Y7`
 > **Last updated:** 2026-04-02
-> **Status:** Sprint 1, task 1.1 complete. Next: task 1.2
+> **Status:** Sprint 1, task 1.1 complete. Next: task 1.2 (code comments)
 
 ---
 
@@ -87,7 +87,48 @@
 
 **Files:** `server/routes/documents.js`, `server/routes/admin/*.js`, `server/utils/email.js`, `server/routes/deploy.js`, `server/app.js`
 
-### 1.2 Toast Notification System
+### 1.2 Beginner-Friendly Code Comments
+
+> Add educational comments throughout the codebase explaining **what** the code does and **why**, aimed at someone learning Node.js/Express/React/SQL for the first time.
+
+**Backend — Express & Node.js:**
+- [ ] `server/app.js` — explain middleware chain (what runs in what order and why), session setup, static file serving, SPA catch-all
+- [ ] `server/db/connection.js` — explain connection pooling (why not one connection per request)
+- [ ] `server/db/schema.sql` — explain each table's purpose, FK relationships, index rationale, FULLTEXT search, ON DELETE behavior
+- [ ] `server/middleware/requireAuth.js` — explain session-based auth, why middleware pattern exists
+- [ ] `server/middleware/requireAdmin.js` — explain role-based access control
+- [ ] `server/middleware/rateLimit.js` — explain why rate limiting matters, what each limit protects against
+- [ ] `server/middleware/sanitize.js` — explain XSS, why we strip HTML tags
+- [ ] `server/routes/auth.js` — explain password hashing (bcrypt), honeypot technique, account lockout pattern, why same error for all failures (timing attacks)
+- [ ] `server/routes/documents.js` — explain parameterized queries (SQL injection), file upload flow (multer → temp → rename), ownership checks
+- [ ] `server/routes/admin/*.js` — explain admin-only patterns, polymorphic FK in matching_rules
+- [ ] `server/utils/fileStorage.js` — explain slugify (unicode normalization), multer disk storage, why UUID in filenames
+- [ ] `server/utils/audit.js` — explain audit trail pattern, why fire-and-forget (no await needed in routes)
+- [ ] `server/utils/email.js` — explain SMTP, nodemailer transporter pattern
+
+**Frontend — React & TypeScript:**
+- [ ] `frontend/src/main.tsx` — explain React entry point, StrictMode, PDF.js worker setup
+- [ ] `frontend/src/App.tsx` — explain React Router, protected routes, layout nesting, admin guard
+- [ ] `frontend/src/context/AuthContext.tsx` — explain React Context, why global auth state, the provider/consumer pattern
+- [ ] `frontend/src/components/Layout.tsx` — explain Outlet (nested routing), conditional rendering based on role
+- [ ] `frontend/src/pages/LoginPage.tsx` — explain react-hook-form, honeypot technique (frontend side), controlled vs uncontrolled inputs
+- [ ] `frontend/src/pages/DashboardPage.tsx` — explain useEffect (data fetching), filter state management, pagination pattern
+- [ ] `frontend/src/pages/DocumentPage.tsx` — explain react-pdf, Web Share API, useCallback for stable references
+- [ ] `frontend/src/pages/UploadPage.tsx` — explain FormData, multipart upload, file input handling
+- [ ] `frontend/src/pages/admin/MetadataPage.tsx` — explain generic/reusable component pattern (props-driven CRUD)
+- [ ] `frontend/src/services/api.ts` — explain axios instance, baseURL, withCredentials (cookies), async/await
+- [ ] `frontend/src/types/index.ts` — explain TypeScript interfaces, optional fields, union types
+- [ ] `frontend/src/i18n/index.ts` — explain i18n setup, language detection, fallback chain
+
+**Infrastructure:**
+- [ ] `Dockerfile` — explain multi-stage builds, why separate frontend build from production image
+- [ ] `docker-compose.yml` — explain service dependencies, volumes, healthchecks, env vars
+- [ ] `.env.example` — explain each variable's purpose and security implications
+
+**Files:** all files listed above (comments only — no logic changes)
+
+### 1.3 Toast Notification System
+
 - [ ] Install `react-hot-toast` (or similar lightweight library)
 - [ ] Create a `<Toaster />` wrapper in App.tsx
 - [ ] Replace ALL `alert()` calls in frontend with toast:
@@ -101,7 +142,7 @@
 
 **Files:** `frontend/package.json`, `frontend/src/App.tsx`, all pages
 
-### 1.3 User Account Page (self-service)
+### 1.4 User Account Page (self-service)
 - [ ] Backend: `PUT /api/users/me` — update own first_name, last_name, email
 - [ ] Backend: `PUT /api/users/me/password` — change own password (requires current password + password complexity validation)
 - [ ] Frontend: `AccountPage.tsx` — form with name, email, password change
@@ -111,7 +152,7 @@
 
 **Files:** `server/routes/users.js`, new `frontend/src/pages/AccountPage.tsx`, `App.tsx`, `Layout.tsx`, locale files
 
-### 1.4 Password Reset via Email
+### 1.5 Password Reset via Email
 - [ ] Backend: `POST /auth/forgot-password` — generate reset token, send email
 - [ ] Backend: `POST /auth/reset-password` — verify token, set new password (with complexity rules)
 - [ ] Schema: add `password_reset_tokens` table (id, user_id, token CHAR(64) UNIQUE, used BOOLEAN, expires_at DATETIME, created_at DATETIME)
@@ -123,7 +164,7 @@
 
 **Files:** `server/db/schema.sql`, `server/routes/auth.js`, `server/utils/email.js`, new frontend pages, locale files
 
-### 1.5 Error Boundaries
+### 1.6 Error Boundaries
 - [ ] Create `ErrorBoundary.tsx` component (catches React render errors)
 - [ ] Wrap the app (or route sections) with error boundary
 - [ ] Show a friendly "Something went wrong" page with a "Go home" button
@@ -131,7 +172,7 @@
 
 **Files:** new `frontend/src/components/ErrorBoundary.tsx`, `App.tsx`
 
-### 1.6 Loading Skeletons
+### 1.7 Loading Skeletons
 - [ ] Create `SkeletonCard.tsx` component (pulsing gray rectangles)
 - [ ] Replace "Loading..." text in DashboardPage, DocumentPage, EditDocumentPage
 - [ ] Add skeleton for PDF thumbnail while loading
