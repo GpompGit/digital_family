@@ -1,3 +1,37 @@
+// =============================================================================
+// App.tsx — Root Component & Route Definitions
+// =============================================================================
+//
+// REACT ROUTER:
+// This app is a "Single Page Application" (SPA). The browser loads ONE HTML page,
+// and React Router handles navigation by swapping components based on the URL.
+// No full-page reloads — just fast component switches.
+//
+// KEY CONCEPTS:
+//   <BrowserRouter> — enables client-side URL routing
+//   <Routes> — container for all route definitions
+//   <Route path="/upload" element={<UploadPage />}> — when URL is /upload, show UploadPage
+//   <Route index> — the default child route (shown when parent path matches exactly)
+//   <Navigate to="/login" replace> — redirect to another URL
+//   :uuid — a URL parameter (e.g., /documents/abc-123 → uuid = "abc-123")
+//
+// ROUTE GUARDS:
+//   ProtectedRoute — shows content only if user is logged in; redirects to /login otherwise
+//   AdminRoute — like ProtectedRoute but also requires role='admin'
+//   PublicRoute — shows content only if user is NOT logged in (for login page)
+//
+// NESTED ROUTES:
+//   <Route element={<Layout />}> wraps its children with the Layout component.
+//   Layout renders a <nav> bar and an <Outlet /> where child routes appear.
+//   This means all authenticated pages share the same navigation bar.
+//
+// ADMIN PAGES:
+//   CategoriesPage, InstitutionsPage, TagsPage, CustomFieldsPage are thin
+//   wrappers around the reusable MetadataPage component, configured with
+//   different API paths and field definitions. This avoids code duplication —
+//   one component handles CRUD for four different entity types.
+// =============================================================================
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider, useAuth } from './context/AuthContext';
