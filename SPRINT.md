@@ -2,7 +2,7 @@
 
 > **Branch:** `claude/plan-database-schema-pe7Y7`
 > **Last updated:** 2026-04-02
-> **Status:** Sprint 1 complete, Sprint 2 ready
+> **Status:** Sprint 1, task 1.1 complete. Next: task 1.2
 
 ---
 
@@ -16,15 +16,17 @@
 | 4 | `4f8c944` | i18n — react-i18next with EN/DE/ES, browser language auto-detection, language switcher |
 | 5 | `028cd22` | Admin settings — requireAdmin middleware, CRUD for users/categories/institutions/tags/custom-fields, audit log viewer, bcrypt password auth |
 | 6 | `f67f344` | Enhanced browsing — PDF thumbnail (react-pdf), tag/institution/date-range filters, print/share/download actions, owner-only delete |
+| 7 | `8a30f71` | Sprint plan document |
+| 8 | `fe418da` | Security hardening — honeypot, lockout, CSP, audit, sanitization |
 
 ### Current File Inventory
 
 **Backend:**
-- `server/app.js` — Express app, all routes registered
+- `server/app.js` — Express app, all routes registered, CSP configured, rate limiters applied, input sanitization
 - `server/db/schema.sql` — 12 tables, all indexes, FULLTEXT search
 - `server/db/seed.sql` — categories, 4 humans + 2 cats, institutions, tags
-- `server/middleware/` — requireAuth, requireAdmin, rateLimit
-- `server/routes/auth.js` — email+password login, session, status (returns role)
+- `server/middleware/` — requireAuth, requireAdmin, rateLimit (login/upload/admin/api), sanitize (HTML strip)
+- `server/routes/auth.js` — email+password login with honeypot, account lockout, audit logging, logout
 - `server/routes/documents.js` — CRUD + file stream + owner-only delete + file rename on update
 - `server/routes/categories.js`, `institutions.js`, `tags.js` — public listing endpoints
 - `server/routes/users.js` — /me + list all
@@ -34,52 +36,74 @@
 - `server/routes/admin/audit.js` — paginated audit log with filters
 - `server/utils/fileStorage.js` — slugify, buildDocumentPath, ensureDir, removeEmptyDir, multer
 - `server/utils/email.js` — nodemailer (magic link — needs update for password reset)
+- `server/utils/audit.js` — audit_log helper (logAudit)
 
 **Frontend:**
 - `frontend/src/i18n/` — config + 3 locale files (en, de, es)
 - `frontend/src/context/AuthContext.tsx` — auth state
 - `frontend/src/components/Layout.tsx` — nav + language switcher + admin link
-- `frontend/src/pages/LoginPage.tsx` — email+password login
+- `frontend/src/pages/LoginPage.tsx` — email+password login with honeypot field + lockout message
 - `frontend/src/pages/DashboardPage.tsx` — filters (search, category, person, institution, tag, date range, sort) + document list + pagination
-- `frontend/src/pages/DocumentPage.tsx` — PDF preview + metadata + print/share/download/edit/delete
+- `frontend/src/pages/DocumentPage.tsx` — PDF preview + metadata + print/share/download/edit/delete (owner-only)
 - `frontend/src/pages/UploadPage.tsx` — upload form (person_id, institution_id, expires_at)
 - `frontend/src/pages/EditDocumentPage.tsx` — edit metadata + file rename
 - `frontend/src/pages/admin/` — SettingsLayout, UsersPage, MetadataPage, AuditLogPage
 - `frontend/src/services/api.ts` — all API calls
 - `frontend/src/types/index.ts` — TypeScript interfaces
 
-### Known Issues / Debt
-- `server/utils/email.js` still has magic link function — needs password reset email
-- `magic_tokens` table removed from schema but old email util references it
-- No tests exist (test/ directory empty)
-- `alert()` used for all user feedback (no toast system)
-- No error boundaries in React
-- No PWA manifest
-- CSP disabled in Helmet
-
 ---
 
-## Sprint 1 — Core Quality & Self-Service
+## Sprint 1 — Security & Core Quality
 
-> **Goal:** Make the app feel polished and let users manage their own accounts.
+> **Goal:** Lock down the application, then make it feel polished.
 
-### 1.1 Toast Notification System
+### 1.1 Security Hardening ✅ DONE (commit `fe418da`)
+
+**Already implemented:**
+- [x] Honeypot on login form (hidden field, catches bots, logged to audit)
+- [x] Account lockout after 5 failed attempts per email (15-min cooldown)
+- [x] All login/logout events logged to audit_log with IP, reason, attempt count
+- [x] Content Security Policy configured (self, blob: for PDF.js, frame-ancestors none)
+- [x] CORS restricted to production domain in production
+- [x] Rate limiting: login 5/15min, upload 10/min, admin 60/min, API 120/min (per IP via x-forwarded-for)
+- [x] Input sanitization middleware (strips HTML tags from all req.body)
+- [x] Audit infrastructure (`server/utils/audit.js` helper)
+- [x] Owner-only delete (user_id check + admin override on DELETE route)
+- [x] Parameterized SQL queries (all routes, verified)
+- [x] bcrypt password hashing (cost factor 10)
+- [x] Session cookies: httpOnly, secure (production), sameSite lax
+
+**Remaining security tasks:**
+- [ ] Password complexity enforcement — require minimum 8 chars + at least one number + one letter on all password endpoints (admin create, admin reset, future user self-change)
+- [ ] Session idle timeout — destroy session after 30 min of inactivity (not just 7-day maxAge)
+- [ ] Audit logging on document CRUD — call `logAudit()` from document create, update, delete, download routes
+- [ ] Audit logging on admin operations — call `logAudit()` from admin user/metadata CRUD routes
+- [ ] Clean up `server/utils/email.js` — remove magic link references, prepare for password reset
+- [ ] File path traversal protection — validate that `file_path` from DB doesn't escape uploads dir (defense-in-depth)
+- [ ] Deploy webhook signature timing-safe comparison — verify `crypto.timingSafeEqual` is used in deploy route
+- [ ] Helmet `Referrer-Policy: strict-origin-when-cross-origin` (verify default)
+- [ ] Helmet `X-Content-Type-Options: nosniff` (verify default)
+- [ ] Helmet `Permissions-Policy` — disable camera, microphone, geolocation (not needed)
+
+**Files:** `server/routes/documents.js`, `server/routes/admin/*.js`, `server/utils/email.js`, `server/routes/deploy.js`, `server/app.js`
+
+### 1.2 Toast Notification System
 - [ ] Install `react-hot-toast` (or similar lightweight library)
 - [ ] Create a `<Toaster />` wrapper in App.tsx
 - [ ] Replace ALL `alert()` calls in frontend with toast:
   - DocumentPage: delete success/error
   - UploadPage: upload error
   - EditDocumentPage: save error
-  - LoginPage: login error
+  - LoginPage: login error (keep inline for form context)
   - Admin pages: all CRUD operations
 - [ ] Add success toasts for: upload complete, document updated, document deleted
 - [ ] Translations for all toast messages (en/de/es)
 
 **Files:** `frontend/package.json`, `frontend/src/App.tsx`, all pages
 
-### 1.2 User Account Page (self-service)
+### 1.3 User Account Page (self-service)
 - [ ] Backend: `PUT /api/users/me` — update own first_name, last_name, email
-- [ ] Backend: `PUT /api/users/me/password` — change own password (requires current password)
+- [ ] Backend: `PUT /api/users/me/password` — change own password (requires current password + password complexity validation)
 - [ ] Frontend: `AccountPage.tsx` — form with name, email, password change
 - [ ] Route: `/account` (protected, any user)
 - [ ] Add "Account" link in nav (next to logout)
@@ -87,18 +111,19 @@
 
 **Files:** `server/routes/users.js`, new `frontend/src/pages/AccountPage.tsx`, `App.tsx`, `Layout.tsx`, locale files
 
-### 1.3 Password Reset via Email
+### 1.4 Password Reset via Email
 - [ ] Backend: `POST /auth/forgot-password` — generate reset token, send email
-- [ ] Backend: `POST /auth/reset-password` — verify token, set new password
-- [ ] Schema: add `password_reset_tokens` table (or reuse pattern from old magic_tokens)
+- [ ] Backend: `POST /auth/reset-password` — verify token, set new password (with complexity rules)
+- [ ] Schema: add `password_reset_tokens` table (id, user_id, token CHAR(64) UNIQUE, used BOOLEAN, expires_at DATETIME, created_at DATETIME)
 - [ ] Frontend: "Forgot password?" link on login page
 - [ ] Frontend: `ResetPasswordPage.tsx` — enter new password after clicking email link
-- [ ] Update `server/utils/email.js` for password reset emails
+- [ ] Rewrite `server/utils/email.js` — remove magic link, add password reset email template
+- [ ] Rate limit on forgot-password (3 per hour per email)
 - [ ] Translations (en/de/es)
 
 **Files:** `server/db/schema.sql`, `server/routes/auth.js`, `server/utils/email.js`, new frontend pages, locale files
 
-### 1.4 Error Boundaries
+### 1.5 Error Boundaries
 - [ ] Create `ErrorBoundary.tsx` component (catches React render errors)
 - [ ] Wrap the app (or route sections) with error boundary
 - [ ] Show a friendly "Something went wrong" page with a "Go home" button
@@ -106,7 +131,7 @@
 
 **Files:** new `frontend/src/components/ErrorBoundary.tsx`, `App.tsx`
 
-### 1.5 Loading Skeletons
+### 1.6 Loading Skeletons
 - [ ] Create `SkeletonCard.tsx` component (pulsing gray rectangles)
 - [ ] Replace "Loading..." text in DashboardPage, DocumentPage, EditDocumentPage
 - [ ] Add skeleton for PDF thumbnail while loading
@@ -261,9 +286,9 @@
 
 ---
 
-## Sprint 6 — Data & Security
+## Sprint 6 — Data Management & Export
 
-> **Goal:** Export, integrity, and security hardening.
+> **Goal:** Data integrity, export, and operational tooling.
 
 ### 6.1 Export All Documents
 - [ ] Backend: `GET /api/documents/export` — generates ZIP with all PDFs + metadata.csv
@@ -276,20 +301,15 @@
 - [ ] On upload, check if hash exists — warn user "This file may already exist as [title]"
 - [ ] Schema change: add `file_hash CHAR(64)` to documents table
 
-### 6.3 Audit Log Integration
-- [ ] Actually write to audit_log from all routes (currently the table exists but nothing writes to it)
-- [ ] Create `server/utils/audit.js` helper: `logAudit(userId, action, entityType, entityId, entityUuid, details, ip)`
-- [ ] Add audit calls to: document CRUD, login/logout, admin operations, file downloads
-- [ ] IP address from `req.ip` or `req.headers['x-forwarded-for']`
+### 6.3 Database Cleanup Cron
+- [ ] Expired sessions cleanup (already configured in session store, verify)
+- [ ] Old audit log pruning (e.g., delete entries > 1 year, admin configurable)
+- [ ] Orphaned file detection (files on disk without DB record, and vice versa)
 
-### 6.4 Content Security Policy
-- [ ] Configure Helmet CSP properly (currently disabled)
-- [ ] Allow: self, PDF viewer, CDN resources
-- [ ] Test that PDF preview and all features still work
-
-### 6.5 Rate Limiting on Admin Routes
-- [ ] Add rate limiter to admin API endpoints
-- [ ] Separate limits for admin vs. regular API
+### 6.4 Storage Stats in Admin
+- [ ] Total storage used (sum of file_size)
+- [ ] Storage per person, per category
+- [ ] Display in admin dashboard or settings page
 
 ---
 
@@ -299,13 +319,45 @@
 - [ ] Auto-matching rules engine (use `matching_rules` table + `extracted_text`)
 - [ ] Document linking (explicit relationships between docs)
 - [ ] Bulk import from Paperless-ngx
-- [ ] Storage stats in admin dashboard
 - [ ] Weekly digest email
-- [ ] Two-factor authentication
+
 - [ ] Session management (view/revoke active sessions)
-- [ ] Database cleanup cron (expired sessions, old audit logs)
 - [ ] Thumbnail generation cache (avoid re-rendering PDF on every view)
 - [ ] Document comparison (diff between versions)
+- [ ] Push notifications (Web Push API for expiry reminders)
+- [ ] Search result highlighting
+
+---
+
+## Security Checklist (Reference)
+
+| Measure | Status | Where |
+|---------|--------|-------|
+| HTTPS enforcement | ✅ | Cloudflare Tunnel |
+| Parameterized SQL queries | ✅ | All routes |
+| bcrypt password hashing (cost 10) | ✅ | auth.js, admin/users.js |
+| Session cookies: httpOnly, secure, sameSite | ✅ | app.js |
+| Content Security Policy | ✅ | app.js (Helmet) |
+| CORS restricted to domain | ✅ | app.js |
+| Rate limiting (login, upload, admin, API) | ✅ | rateLimit.js, app.js |
+| Honeypot on login | ✅ | LoginPage.tsx, auth.js |
+| Account lockout (5 attempts / 15 min) | ✅ | auth.js |
+| Login/logout audit logging | ✅ | auth.js, audit.js |
+| Input sanitization (HTML strip) | ✅ | sanitize.js |
+| Owner-only delete | ✅ | documents.js |
+| File type validation (PDF only) | ✅ | fileStorage.js |
+| File size limit (25 MB) | ✅ | fileStorage.js |
+| UUID-based file paths | ✅ | fileStorage.js |
+| Webhook HMAC-SHA256 validation | ✅ | deploy.js |
+| X-Frame-Options / frame-ancestors | ✅ | Helmet CSP |
+| Password complexity rules | ⬜ | Sprint 1.1 remaining |
+| Session idle timeout | ⬜ | Sprint 1.1 remaining |
+| Document CRUD audit logging | ⬜ | Sprint 1.1 remaining |
+| Admin CRUD audit logging | ⬜ | Sprint 1.1 remaining |
+| File path traversal check | ⬜ | Sprint 1.1 remaining |
+| Permissions-Policy header | ⬜ | Sprint 1.1 remaining |
+| Password reset with token | ⬜ | Sprint 1.4 |
+| Duplicate file detection | ⬜ | Sprint 6.2 |
 
 ---
 
