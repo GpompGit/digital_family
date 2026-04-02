@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import pool from '../db/connection.js';
 import requireAuth from '../middleware/requireAuth.js';
-import { upload, getFilePath } from '../utils/fileStorage.js';
+import { upload, getFilePath, buildDocumentPath, ensureDir, removeEmptyDir } from '../utils/fileStorage.js';
 import { uploadLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
@@ -11,20 +11,32 @@ const router = Router();
 // GET /api/documents — list with filters
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { category, person, institution, q, from, to, sort, page, limit } = req.query;
+    const { category, person, institution, tag, q, from, to, expiring_before, sort, page, limit } = req.query;
 
     let sql = `
-      SELECT d.id, d.uuid, d.person_name, d.title, d.institution,
+      SELECT d.id, d.uuid, d.person_id, d.title,
              d.document_date, d.file_size, d.original_filename, d.notes,
+             d.expires_at, d.reminder_sent, d.version, d.parent_uuid,
              d.created_at, d.updated_at,
              c.name AS category_name, c.slug AS category_slug,
+             p.first_name AS person_first_name, p.last_name AS person_last_name,
+             i.id AS institution_id, i.name AS institution_name,
              u.first_name AS uploaded_by_first, u.last_name AS uploaded_by_last
       FROM documents d
       JOIN categories c ON d.category_id = c.id
       JOIN users u ON d.user_id = u.id
-      WHERE 1=1
+      JOIN users p ON d.person_id = p.id
+      LEFT JOIN institutions i ON d.institution_id = i.id
     `;
+
+    const joins = [];
     const params = [];
+
+    if (tag) {
+      joins.push('JOIN document_tags dt ON d.id = dt.document_id JOIN tags t ON dt.tag_id = t.id');
+    }
+
+    sql += joins.join(' ') + ' WHERE 1=1';
 
     if (category) {
       sql += ' AND c.slug = ?';
@@ -32,19 +44,23 @@ router.get('/', requireAuth, async (req, res) => {
     }
 
     if (person) {
-      sql += ' AND d.person_name = ?';
-      params.push(person);
+      sql += ' AND d.person_id = ?';
+      params.push(parseInt(person));
     }
 
     if (institution) {
-      sql += ' AND d.institution LIKE ?';
-      params.push(`%${institution}%`);
+      sql += ' AND d.institution_id = ?';
+      params.push(parseInt(institution));
+    }
+
+    if (tag) {
+      sql += ' AND t.slug = ?';
+      params.push(tag);
     }
 
     if (q) {
-      sql += ' AND (d.title LIKE ? OR d.institution LIKE ? OR d.notes LIKE ?)';
-      const search = `%${q}%`;
-      params.push(search, search, search);
+      sql += ' AND MATCH(d.title, d.extracted_text) AGAINST(? IN BOOLEAN MODE)';
+      params.push(q);
     }
 
     if (from) {
@@ -55,6 +71,11 @@ router.get('/', requireAuth, async (req, res) => {
     if (to) {
       sql += ' AND d.document_date <= ?';
       params.push(to);
+    }
+
+    if (expiring_before) {
+      sql += ' AND d.expires_at IS NOT NULL AND d.expires_at <= ?';
+      params.push(expiring_before);
     }
 
     // Sorting
@@ -106,14 +127,19 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:uuid', requireAuth, async (req, res) => {
   try {
     const [documents] = await pool.query(
-      `SELECT d.id, d.uuid, d.person_name, d.title, d.institution,
+      `SELECT d.id, d.uuid, d.person_id, d.title,
               d.document_date, d.file_size, d.original_filename, d.notes,
+              d.expires_at, d.reminder_sent, d.version, d.parent_uuid,
               d.created_at, d.updated_at,
               c.name AS category_name, c.slug AS category_slug, c.id AS category_id,
+              p.first_name AS person_first_name, p.last_name AS person_last_name,
+              i.id AS institution_id, i.name AS institution_name,
               u.first_name AS uploaded_by_first, u.last_name AS uploaded_by_last
        FROM documents d
        JOIN categories c ON d.category_id = c.id
        JOIN users u ON d.user_id = u.id
+       JOIN users p ON d.person_id = p.id
+       LEFT JOIN institutions i ON d.institution_id = i.id
        WHERE d.uuid = ?`,
       [req.params.uuid]
     );
@@ -141,7 +167,7 @@ router.get('/:uuid/file', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    const filePath = getFilePath(req.params.uuid);
+    const filePath = getFilePath(documents[0].file_path);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'File not found on disk' });
@@ -163,42 +189,130 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
       return res.status(400).json({ error: 'PDF file is required' });
     }
 
-    const { person_name, category_id, title, institution, document_date, notes } = req.body;
+    const { person_id, category_id, title, institution_id, document_date, notes, expires_at } = req.body;
 
-    if (!person_name || !category_id || !title) {
-      // Clean up uploaded file
+    if (!person_id || !category_id || !title) {
       fs.unlinkSync(req.file.path);
-      return res.status(400).json({ error: 'person_name, category_id, and title are required' });
+      return res.status(400).json({ error: 'person_id, category_id, and title are required' });
     }
 
     const uuid = req.fileUuid;
 
+    // Look up person, category, and institution for file path
+    const [[person]] = await pool.query(
+      'SELECT first_name, last_name FROM users WHERE id = ?', [person_id]
+    );
+    if (!person) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'Invalid person_id' });
+    }
+
+    const [[category]] = await pool.query(
+      'SELECT slug FROM categories WHERE id = ?', [category_id]
+    );
+    if (!category) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'Invalid category_id' });
+    }
+
+    let institutionSlug = null;
+    if (institution_id) {
+      const [[inst]] = await pool.query(
+        'SELECT slug FROM institutions WHERE id = ?', [institution_id]
+      );
+      if (!inst) {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ error: 'Invalid institution_id' });
+      }
+      institutionSlug = inst.slug;
+    }
+
+    // Build descriptive file path and move file
+    const { relativePath, absolutePath, dirPath } = buildDocumentPath(
+      person, category.slug, document_date || null, institutionSlug, title, uuid
+    );
+    ensureDir(dirPath);
+    fs.renameSync(req.file.path, absolutePath);
+
     await pool.query(
-      `INSERT INTO documents (uuid, user_id, person_name, category_id, title, institution, document_date, file_path, file_size, original_filename, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [uuid, req.session.userId, person_name, category_id, title, institution || null, document_date || null, `${uuid}.pdf`, req.file.size, req.file.originalname, notes || null]
+      `INSERT INTO documents (uuid, user_id, person_id, category_id, title, institution_id, document_date, file_path, file_size, original_filename, notes, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [uuid, req.session.userId, person_id, category_id, title, institution_id || null, document_date || null, relativePath, req.file.size, req.file.originalname, notes || null, expires_at || null]
     );
 
     res.status(201).json({ uuid, message: 'Document uploaded' });
   } catch (err) {
     console.error('Upload error:', err.message);
-    // Clean up file on error
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+    // Clean up temp file or final file on error
+    if (req.file) {
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     }
     res.status(500).json({ error: 'Failed to upload document' });
   }
 });
 
-// PUT /api/documents/:uuid — update metadata
+// PUT /api/documents/:uuid — update metadata (renames file if path-relevant fields change)
 router.put('/:uuid', requireAuth, async (req, res) => {
   try {
-    const { person_name, category_id, title, institution, document_date, notes } = req.body;
+    const { person_id, category_id, title, institution_id, document_date, notes, expires_at } = req.body;
+
+    // Fetch current document
+    const [[doc]] = await pool.query(
+      'SELECT id, uuid, file_path FROM documents WHERE uuid = ?',
+      [req.params.uuid]
+    );
+    if (!doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // Look up person, category, institution for new file path
+    const [[person]] = await pool.query(
+      'SELECT first_name, last_name FROM users WHERE id = ?', [person_id]
+    );
+    if (!person) {
+      return res.status(400).json({ error: 'Invalid person_id' });
+    }
+
+    const [[category]] = await pool.query(
+      'SELECT slug FROM categories WHERE id = ?', [category_id]
+    );
+    if (!category) {
+      return res.status(400).json({ error: 'Invalid category_id' });
+    }
+
+    let institutionSlug = null;
+    if (institution_id) {
+      const [[inst]] = await pool.query(
+        'SELECT slug FROM institutions WHERE id = ?', [institution_id]
+      );
+      if (!inst) {
+        return res.status(400).json({ error: 'Invalid institution_id' });
+      }
+      institutionSlug = inst.slug;
+    }
+
+    // Build new file path
+    const { relativePath, absolutePath, dirPath } = buildDocumentPath(
+      person, category.slug, document_date || null, institutionSlug, title, doc.uuid
+    );
+
+    // Rename file on disk if path changed
+    if (relativePath !== doc.file_path) {
+      const oldAbsPath = getFilePath(doc.file_path);
+      const oldDirPath = path.dirname(oldAbsPath);
+
+      ensureDir(dirPath);
+      if (fs.existsSync(oldAbsPath)) {
+        fs.renameSync(oldAbsPath, absolutePath);
+      }
+      removeEmptyDir(oldDirPath);
+    }
 
     const [result] = await pool.query(
-      `UPDATE documents SET person_name = ?, category_id = ?, title = ?, institution = ?, document_date = ?, notes = ?
+      `UPDATE documents SET person_id = ?, category_id = ?, title = ?, institution_id = ?,
+       document_date = ?, notes = ?, expires_at = ?, file_path = ?
        WHERE uuid = ?`,
-      [person_name, category_id, title, institution || null, document_date || null, notes || null, req.params.uuid]
+      [person_id, category_id, title, institution_id || null, document_date || null, notes || null, expires_at || null, relativePath, req.params.uuid]
     );
 
     if (result.affectedRows === 0) {
@@ -225,10 +339,12 @@ router.delete('/:uuid', requireAuth, async (req, res) => {
     }
 
     // Delete file from disk
-    const filePath = getFilePath(req.params.uuid);
+    const filePath = getFilePath(documents[0].file_path);
+    const dirPath = path.dirname(filePath);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
+    removeEmptyDir(dirPath);
 
     // Delete from database
     await pool.query('DELETE FROM documents WHERE uuid = ?', [req.params.uuid]);
