@@ -1,3 +1,19 @@
+// =============================================================================
+// app.js — The main Express application entry point
+// =============================================================================
+//
+// This file sets up the Express web server and wires everything together.
+// Think of it as the "table of contents" for the backend:
+//   1. Import all dependencies and route files
+//   2. Configure middleware (functions that run BEFORE your route handlers)
+//   3. Register routes (URL paths → handler functions)
+//   4. Start listening for HTTP requests
+//
+// MIDDLEWARE ORDER MATTERS! Express processes middleware top-to-bottom.
+// For example, helmet (security headers) must run before routes, and the
+// error handler must be the LAST middleware registered.
+// =============================================================================
+
 import express from 'express';
 import session from 'express-session';
 import MySQLStoreFactory from 'express-mysql-session';
@@ -17,16 +33,22 @@ import adminUserRoutes from './routes/admin/users.js';
 import adminMetadataRoutes from './routes/admin/metadata.js';
 import adminAuditRoutes from './routes/admin/audit.js';
 
+// ES Modules don't have __dirname like CommonJS, so we derive it manually.
+// __dirname = the folder where THIS file lives (server/).
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3456;
 
-// Session store
+// -----------------------------------------------------------------------------
+// Session Store — saves user sessions in MariaDB instead of server memory.
+// Why? If the server restarts, users stay logged in. Without this, every
+// restart would log everyone out because sessions lived only in RAM.
+// -----------------------------------------------------------------------------
 const MySQLStore = MySQLStoreFactory(session);
 const sessionStore = new MySQLStore({
-  clearExpired: true,
-  checkExpirationInterval: 900000,
-  createDatabaseTable: false,
+  clearExpired: true,                // automatically delete expired sessions
+  checkExpirationInterval: 900000,   // check every 15 minutes (in milliseconds)
+  createDatabaseTable: false,        // we create the table ourselves in schema.sql
   schema: {
     tableName: 'sessions',
     columnNames: {
@@ -35,73 +57,111 @@ const sessionStore = new MySQLStore({
       data: 'data'
     }
   }
-}, pool);
+}, pool); // pass our existing database connection pool
 
-// Middleware
+// =============================================================================
+// MIDDLEWARE — functions that process EVERY request before it reaches a route.
+// They run in the order they are registered with app.use().
+// =============================================================================
+
+// Helmet — sets various HTTP security headers automatically.
+// Content Security Policy (CSP) tells the browser which resources are allowed.
+// This prevents attackers from injecting malicious scripts (XSS attacks).
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],  // Tailwind injects inline styles
-      imgSrc: ["'self'", "data:", "blob:"],      // PDF.js renders to canvas/blob
-      fontSrc: ["'self'"],
-      connectSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      frameSrc: ["'self'", "blob:"],             // PDF viewer uses blob: URLs in iframes
-      workerSrc: ["'self'", "blob:"],            // PDF.js web worker
-      mediaSrc: ["'none'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-      frameAncestors: ["'none'"],                // prevent clickjacking
+      defaultSrc: ["'self'"],                    // only load resources from our own domain
+      scriptSrc: ["'self'"],                     // only run our own JavaScript
+      styleSrc: ["'self'", "'unsafe-inline'"],   // Tailwind CSS injects inline styles, so we must allow it
+      imgSrc: ["'self'", "data:", "blob:"],      // PDF.js creates blob: URLs for canvas rendering
+      fontSrc: ["'self'"],                       // only load fonts from our domain
+      connectSrc: ["'self'"],                    // AJAX/fetch requests only to our domain
+      objectSrc: ["'none'"],                     // block Flash, Java applets, etc.
+      frameSrc: ["'self'", "blob:"],             // PDF viewer opens blob: URLs in iframes
+      workerSrc: ["'self'", "blob:"],            // PDF.js runs a web worker for parsing
+      mediaSrc: ["'none'"],                      // no audio/video needed
+      baseUri: ["'self'"],                       // prevent <base> tag hijacking
+      formAction: ["'self'"],                    // forms can only submit to our domain
+      frameAncestors: ["'none'"],                // prevent clickjacking (no one can embed us in an iframe)
     }
   },
-  crossOriginEmbedderPolicy: false, // PDF.js worker needs cross-origin isolation disabled
+  crossOriginEmbedderPolicy: false, // PDF.js worker needs this disabled to function
 }));
+
+// CORS — Cross-Origin Resource Sharing.
+// Controls which websites can make requests to our API.
+// In production, only our own domain is allowed. In development, any origin works.
+// credentials: true means cookies (session) are sent with cross-origin requests.
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? 'https://digitalfamily.carbonnull.ch'
     : true,
   credentials: true,
 }));
+
+// Body parsers — convert incoming request bodies into JavaScript objects.
+// express.json() handles JSON payloads (most API calls).
+// express.urlencoded() handles form submissions.
+// limit: '1mb' prevents attackers from sending huge payloads to crash the server.
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// Input sanitization — strip HTML tags from all request bodies
+// Input sanitization — strips HTML tags from ALL incoming request body fields.
+// This prevents "stored XSS" attacks where an attacker puts <script> tags in
+// form fields that later get displayed to other users.
 import sanitizeInput from './middleware/sanitize.js';
 app.use(sanitizeInput);
 
+// Session middleware — manages user login sessions via cookies.
+// When a user logs in, we store their userId in the session.
+// On every subsequent request, Express reads the session cookie and loads
+// the session data from MariaDB, making req.session.userId available.
 app.use(session({
   store: sessionStore,
-  secret: process.env.SESSION_SECRET || 'change-me',
-  resave: false,
-  saveUninitialized: false,
+  secret: process.env.SESSION_SECRET || 'change-me', // used to sign the session cookie (must be random in production!)
+  resave: false,            // don't save session if nothing changed
+  saveUninitialized: false, // don't create session until something is stored
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    secure: process.env.NODE_ENV === 'production', // only send cookie over HTTPS in production
+    httpOnly: true,    // JavaScript cannot access the cookie (prevents XSS cookie theft)
+    sameSite: 'lax',   // cookie sent with same-site requests + top-level navigations (CSRF protection)
+    maxAge: 7 * 24 * 60 * 60 * 1000 // cookie expires after 7 days (in milliseconds)
   }
 }));
 
-// Rate limiting
+// Rate limiting — prevents abuse by limiting how many requests a client can make.
+// Applied BEFORE routes so blocked requests never reach the handlers.
+// Admin routes get a stricter limit (60/min) than general API routes (120/min).
 import { adminLimiter, apiLimiter } from './middleware/rateLimit.js';
-app.use('/api/admin', adminLimiter);
-app.use('/api', apiLimiter);
+app.use('/api/admin', adminLimiter);  // must come before admin routes
+app.use('/api', apiLimiter);          // must come before API routes
 
-// API routes
-app.use('/auth', authRoutes);
-app.use('/api/documents', documentRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/institutions', institutionRoutes);
-app.use('/api/tags', tagRoutes);
-app.use('/api/admin/users', adminUserRoutes);
-app.use('/api/admin', adminMetadataRoutes);
-app.use('/api/admin/audit', adminAuditRoutes);
-app.use('/deploy', deployRoutes);
+// =============================================================================
+// ROUTES — URL paths mapped to handler functions.
+// Each route file is an Express Router that handles a group of related endpoints.
+// For example, '/api/documents' handles list, get, create, update, delete.
+// =============================================================================
+app.use('/auth', authRoutes);                  // login, logout, session status
+app.use('/api/documents', documentRoutes);     // document CRUD + file upload/stream
+app.use('/api/categories', categoryRoutes);    // list categories (for dropdowns)
+app.use('/api/users', userRoutes);             // current user profile + list all users
+app.use('/api/institutions', institutionRoutes); // list institutions (for dropdowns)
+app.use('/api/tags', tagRoutes);               // list tags (for filter dropdowns)
+app.use('/api/admin/users', adminUserRoutes);  // admin: manage users, reset passwords
+app.use('/api/admin', adminMetadataRoutes);    // admin: manage categories, institutions, tags, custom fields
+app.use('/api/admin/audit', adminAuditRoutes); // admin: view audit log
+app.use('/deploy', deployRoutes);              // GitHub webhook for auto-deploy
 
-// Serve React frontend
+// =============================================================================
+// STATIC FILES & SPA (Single Page Application) CATCH-ALL
+// =============================================================================
+//
+// 1. express.static serves the built React app (HTML, JS, CSS) from /public.
+// 2. The catch-all route handles client-side routing: when someone visits
+//    /documents/abc123, the server doesn't have that route — it's a React
+//    Router route. So we serve index.html and let React handle the URL.
+//    We exclude /api, /auth, and /deploy paths so those still hit the backend.
+// =============================================================================
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api') && !req.path.startsWith('/auth') && !req.path.startsWith('/deploy')) {
@@ -109,12 +169,18 @@ app.get('*', (req, res) => {
   }
 });
 
-// Error handler
+// =============================================================================
+// GLOBAL ERROR HANDLER — catches any unhandled errors from route handlers.
+// Must be registered LAST (after all routes) and must have 4 parameters
+// (err, req, res, next) so Express recognizes it as an error handler.
+// Never expose internal error details to the client (security risk).
+// =============================================================================
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err.message);
   res.status(500).json({ error: 'Internal server error' });
 });
 
+// Start the server and listen for incoming HTTP requests on the configured port.
 app.listen(PORT, () => {
   console.log(`Digital Family running on port ${PORT}`);
 });
