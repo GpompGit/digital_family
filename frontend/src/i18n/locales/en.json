@@ -23,7 +23,8 @@
     "passwordRequired": "Password is required",
     "submit": "Sign in",
     "submitting": "Signing in...",
-    "error": "Invalid email or password. Please try again."
+    "error": "Invalid email or password. Please try again.",
+    "lockedOut": "Account temporarily locked due to too many failed attempts. Try again in 15 minutes."
   },
   "dashboard": {
     "searchPlaceholder": "Search...",

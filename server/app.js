@@ -38,10 +38,38 @@ const sessionStore = new MySQLStore({
 }, pool);
 
 // Middleware
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],  // Tailwind injects inline styles
+      imgSrc: ["'self'", "data:", "blob:"],      // PDF.js renders to canvas/blob
+      fontSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'self'", "blob:"],             // PDF viewer uses blob: URLs in iframes
+      workerSrc: ["'self'", "blob:"],            // PDF.js web worker
+      mediaSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],                // prevent clickjacking
+    }
+  },
+  crossOriginEmbedderPolicy: false, // PDF.js worker needs cross-origin isolation disabled
+}));
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? 'https://digitalfamily.carbonnull.ch'
+    : true,
+  credentials: true,
+}));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Input sanitization — strip HTML tags from all request bodies
+import sanitizeInput from './middleware/sanitize.js';
+app.use(sanitizeInput);
 
 app.use(session({
   store: sessionStore,
@@ -55,6 +83,11 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   }
 }));
+
+// Rate limiting
+import { adminLimiter, apiLimiter } from './middleware/rateLimit.js';
+app.use('/api/admin', adminLimiter);
+app.use('/api', apiLimiter);
 
 // API routes
 app.use('/auth', authRoutes);

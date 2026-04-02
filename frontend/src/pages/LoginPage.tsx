@@ -6,6 +6,7 @@ import { login } from '../services/api';
 interface LoginForm {
   email: string;
   password: string;
+  website: string; // honeypot — hidden from humans, filled by bots
 }
 
 export default function LoginPage() {
@@ -15,13 +16,22 @@ export default function LoginPage() {
   const [error, setError] = useState('');
 
   async function onSubmit(data: LoginForm) {
+    // Honeypot check — if the hidden field has a value, silently reject
+    if (data.website) {
+      // Simulate a delay to not reveal the trap, then show generic error
+      await new Promise(r => setTimeout(r, 1500));
+      setError(t('login.error'));
+      return;
+    }
+
     try {
       setError('');
       setSubmitting(true);
       await login(data.email, data.password);
       window.location.href = '/';
-    } catch {
-      setError(t('login.error'));
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      setError(status === 429 ? t('login.lockedOut') : t('login.error'));
     } finally {
       setSubmitting(false);
     }
@@ -69,6 +79,18 @@ export default function LoginPage() {
           {errors.password && (
             <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
           )}
+
+          {/* Honeypot field — invisible to humans, bots auto-fill it */}
+          <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }}>
+            <label htmlFor="website">Website</label>
+            <input
+              id="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              {...register('website')}
+            />
+          </div>
 
           <button
             type="submit"

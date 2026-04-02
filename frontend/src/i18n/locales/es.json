@@ -23,7 +23,8 @@
     "passwordRequired": "La contrase\u00f1a es obligatoria",
     "submit": "Iniciar sesi\u00f3n",
     "submitting": "Iniciando sesi\u00f3n...",
-    "error": "Correo o contrase\u00f1a inv\u00e1lidos. Int\u00e9ntelo de nuevo."
+    "error": "Correo o contrase\u00f1a inv\u00e1lidos. Int\u00e9ntelo de nuevo.",
+    "lockedOut": "Cuenta bloqueada temporalmente por demasiados intentos fallidos. Int\u00e9ntelo en 15 minutos."
   },
   "dashboard": {
     "searchPlaceholder": "Buscar...",

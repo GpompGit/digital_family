@@ -12,8 +12,8 @@ export async function checkAuth(): Promise<{ authenticated: boolean; user?: User
   return data;
 }
 
-export async function login(email: string, password: string): Promise<{ message: string }> {
-  const { data } = await api.post('/auth/login', { email, password });
+export async function login(email: string, password: string, website?: string): Promise<{ message: string }> {
+  const { data } = await api.post('/auth/login', { email, password, website });
   return data;
 }
 

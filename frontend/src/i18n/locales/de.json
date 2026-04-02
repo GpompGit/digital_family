@@ -23,7 +23,8 @@
     "passwordRequired": "Passwort ist erforderlich",
     "submit": "Anmelden",
     "submitting": "Anmeldung l\u00e4uft...",
-    "error": "Ung\u00fcltige E-Mail oder Passwort. Bitte versuchen Sie es erneut."
+    "error": "Ung\u00fcltige E-Mail oder Passwort. Bitte versuchen Sie es erneut.",
+    "lockedOut": "Konto vor\u00fcbergehend gesperrt wegen zu vieler Fehlversuche. Versuchen Sie es in 15 Minuten erneut."
   },
   "dashboard": {
     "searchPlaceholder": "Suchen...",
