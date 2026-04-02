@@ -9,6 +9,7 @@
   },
   "nav": {
     "upload": "Upload",
+    "settings": "Settings",
     "logout": "Logout"
   },
   "login": {
@@ -94,5 +95,56 @@
     "submit": "Save Changes",
     "submitting": "Saving...",
     "error": "Failed to save changes"
+  },
+  "admin": {
+    "settings": "Settings",
+    "users": "Users",
+    "categories": "Categories",
+    "institutions": "Institutions",
+    "tags": "Tags",
+    "customFields": "Custom Fields",
+    "auditLog": "Audit Log",
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this item?",
+    "noEntries": "No entries yet",
+    "name": "Name",
+    "slug": "Slug",
+    "color": "Color",
+    "dataType": "Data type",
+    "action": "Action",
+    "actions": "Actions",
+    "userForm": {
+      "email": "Email",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "password": "Password",
+      "role": "Role",
+      "canLogin": "Can log in",
+      "roleAdmin": "Admin",
+      "roleMember": "Member",
+      "resetPassword": "Reset Password",
+      "newPassword": "New password",
+      "minChars": "Minimum 8 characters",
+      "createUser": "Create User",
+      "editUser": "Edit User",
+      "cannotDeleteSelf": "Cannot delete your own account"
+    },
+    "audit": {
+      "user": "User",
+      "actionLabel": "Action",
+      "entity": "Entity",
+      "details": "Details",
+      "ipAddress": "IP Address",
+      "date": "Date",
+      "allActions": "All actions",
+      "allTypes": "All types",
+      "filterFrom": "From",
+      "filterTo": "To",
+      "system": "System"
+    }
   }
 }

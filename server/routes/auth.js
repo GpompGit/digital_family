@@ -1,88 +1,55 @@
 import { Router } from 'express';
-import crypto from 'crypto';
 import pool from '../db/connection.js';
-import { sendMagicLink } from '../utils/email.js';
 import { loginLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
-// POST /auth/login — send magic link
+// POST /auth/login — email + password
 router.post('/login', loginLimiter, async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
     const [users] = await pool.query(
-      'SELECT id, email FROM users WHERE email = ?',
+      'SELECT id, email, password_hash, first_name, last_name, role, can_login FROM users WHERE email = ? AND can_login = TRUE',
       [email.toLowerCase().trim()]
     );
 
     if (users.length === 0) {
-      // Don't reveal whether the email exists
-      return res.json({ message: 'If this email is registered, a login link has been sent' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const user = users[0];
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    await pool.query(
-      'INSERT INTO magic_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
-      [user.id, token, expiresAt]
-    );
+    if (!user.password_hash) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
 
-    await sendMagicLink(user.email, token);
+    const bcrypt = await import('bcrypt');
+    const valid = await bcrypt.default.compare(password, user.password_hash);
 
-    res.json({ message: 'If this email is registered, a login link has been sent' });
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    req.session.userId = user.id;
+
+    res.json({
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role,
+        can_login: user.can_login
+      }
+    });
   } catch (err) {
     console.error('Login error:', err.message);
-    res.status(500).json({ error: 'Failed to send login link' });
-  }
-});
-
-// GET /auth/verify — verify magic link token
-router.get('/verify', async (req, res) => {
-  try {
-    const { token } = req.query;
-    if (!token) {
-      return res.status(400).json({ error: 'Token is required' });
-    }
-
-    const [tokens] = await pool.query(
-      'SELECT id, user_id, used, expires_at FROM magic_tokens WHERE token = ?',
-      [token]
-    );
-
-    if (tokens.length === 0) {
-      return res.status(400).json({ error: 'Invalid token' });
-    }
-
-    const magicToken = tokens[0];
-
-    if (magicToken.used) {
-      return res.status(400).json({ error: 'Token already used' });
-    }
-
-    if (new Date(magicToken.expires_at) < new Date()) {
-      return res.status(400).json({ error: 'Token expired' });
-    }
-
-    // Mark token as used
-    await pool.query(
-      'UPDATE magic_tokens SET used = TRUE WHERE id = ?',
-      [magicToken.id]
-    );
-
-    // Create session
-    req.session.userId = magicToken.user_id;
-
-    // Redirect to app
-    res.redirect('/');
-  } catch (err) {
-    console.error('Verify error:', err.message);
-    res.status(500).json({ error: 'Verification failed' });
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
@@ -105,7 +72,7 @@ router.get('/status', async (req, res) => {
 
   try {
     const [users] = await pool.query(
-      'SELECT id, email, first_name, last_name FROM users WHERE id = ?',
+      'SELECT id, email, first_name, last_name, role, can_login FROM users WHERE id = ?',
       [req.session.userId]
     );
 

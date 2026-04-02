@@ -41,6 +41,11 @@ export default function Layout() {
                 <Link to="/upload" className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700">
                   {t('nav.upload')}
                 </Link>
+                {user.role === 'admin' && (
+                  <Link to="/settings" className="text-sm text-gray-600 hover:text-gray-900">
+                    {t('nav.settings')}
+                  </Link>
+                )}
                 <span className="text-sm text-gray-600 hidden sm:inline">{user.first_name}</span>
                 <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-700">
                   {t('nav.logout')}

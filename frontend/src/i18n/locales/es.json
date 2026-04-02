@@ -9,6 +9,7 @@
   },
   "nav": {
     "upload": "Subir",
+    "settings": "Configuraci\u00f3n",
     "logout": "Cerrar sesi\u00f3n"
   },
   "login": {
@@ -94,5 +95,56 @@
     "submit": "Guardar cambios",
     "submitting": "Guardando...",
     "error": "No se pudieron guardar los cambios"
+  },
+  "admin": {
+    "settings": "Configuraci\u00f3n",
+    "users": "Usuarios",
+    "categories": "Categor\u00edas",
+    "institutions": "Instituciones",
+    "tags": "Etiquetas",
+    "customFields": "Campos personalizados",
+    "auditLog": "Registro de actividad",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "create": "Crear",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirmDelete": "\u00bfEst\u00e1 seguro de que desea eliminar este elemento?",
+    "noEntries": "A\u00fan no hay entradas",
+    "name": "Nombre",
+    "slug": "Identificador",
+    "color": "Color",
+    "dataType": "Tipo de dato",
+    "action": "Acci\u00f3n",
+    "actions": "Acciones",
+    "userForm": {
+      "email": "Correo electr\u00f3nico",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "password": "Contrase\u00f1a",
+      "role": "Rol",
+      "canLogin": "Puede iniciar sesi\u00f3n",
+      "roleAdmin": "Admin",
+      "roleMember": "Miembro",
+      "resetPassword": "Restablecer contrase\u00f1a",
+      "newPassword": "Nueva contrase\u00f1a",
+      "minChars": "M\u00ednimo 8 caracteres",
+      "createUser": "Crear usuario",
+      "editUser": "Editar usuario",
+      "cannotDeleteSelf": "No puede eliminar su propia cuenta"
+    },
+    "audit": {
+      "user": "Usuario",
+      "actionLabel": "Acci\u00f3n",
+      "entity": "Entidad",
+      "details": "Detalles",
+      "ipAddress": "Direcci\u00f3n IP",
+      "date": "Fecha",
+      "allActions": "Todas las acciones",
+      "allTypes": "Todos los tipos",
+      "filterFrom": "Desde",
+      "filterTo": "Hasta",
+      "system": "Sistema"
+    }
   }
 }

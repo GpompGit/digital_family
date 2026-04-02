@@ -10,7 +10,11 @@ import authRoutes from './routes/auth.js';
 import documentRoutes from './routes/documents.js';
 import categoryRoutes from './routes/categories.js';
 import userRoutes from './routes/users.js';
+import institutionRoutes from './routes/institutions.js';
 import deployRoutes from './routes/deploy.js';
+import adminUserRoutes from './routes/admin/users.js';
+import adminMetadataRoutes from './routes/admin/metadata.js';
+import adminAuditRoutes from './routes/admin/audit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -56,6 +60,10 @@ app.use('/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/institutions', institutionRoutes);
+app.use('/api/admin/users', adminUserRoutes);
+app.use('/api/admin', adminMetadataRoutes);
+app.use('/api/admin/audit', adminAuditRoutes);
 app.use('/deploy', deployRoutes);
 
 // Serve React frontend

@@ -9,6 +9,7 @@
   },
   "nav": {
     "upload": "Hochladen",
+    "settings": "Einstellungen",
     "logout": "Abmelden"
   },
   "login": {
@@ -94,5 +95,56 @@
     "submit": "\u00c4nderungen speichern",
     "submitting": "Wird gespeichert...",
     "error": "\u00c4nderungen konnten nicht gespeichert werden"
+  },
+  "admin": {
+    "settings": "Einstellungen",
+    "users": "Benutzer",
+    "categories": "Kategorien",
+    "institutions": "Institutionen",
+    "tags": "Schlagw\u00f6rter",
+    "customFields": "Eigene Felder",
+    "auditLog": "Protokoll",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "create": "Erstellen",
+    "edit": "Bearbeiten",
+    "delete": "L\u00f6schen",
+    "confirmDelete": "Diesen Eintrag wirklich l\u00f6schen?",
+    "noEntries": "Noch keine Eintr\u00e4ge",
+    "name": "Name",
+    "slug": "Kurzname",
+    "color": "Farbe",
+    "dataType": "Datentyp",
+    "action": "Aktion",
+    "actions": "Aktionen",
+    "userForm": {
+      "email": "E-Mail",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "password": "Passwort",
+      "role": "Rolle",
+      "canLogin": "Kann sich anmelden",
+      "roleAdmin": "Admin",
+      "roleMember": "Mitglied",
+      "resetPassword": "Passwort zur\u00fccksetzen",
+      "newPassword": "Neues Passwort",
+      "minChars": "Mindestens 8 Zeichen",
+      "createUser": "Benutzer erstellen",
+      "editUser": "Benutzer bearbeiten",
+      "cannotDeleteSelf": "Eigenes Konto kann nicht gel\u00f6scht werden"
+    },
+    "audit": {
+      "user": "Benutzer",
+      "actionLabel": "Aktion",
+      "entity": "Objekt",
+      "details": "Details",
+      "ipAddress": "IP-Adresse",
+      "date": "Datum",
+      "allActions": "Alle Aktionen",
+      "allTypes": "Alle Typen",
+      "filterFrom": "Von",
+      "filterTo": "Bis",
+      "system": "System"
+    }
   }
 }
