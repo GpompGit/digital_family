@@ -6,6 +6,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useAuth } from '../context/AuthContext';
 import { getDocument, deleteDocument, getFileUrl } from '../services/api';
+import { SkeletonDocumentDetail } from '../components/Skeleton';
 import type { Document } from '../types';
 
 export default function DocumentPage() {
@@ -87,7 +88,7 @@ export default function DocumentPage() {
   }
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-400">{t('common.loading')}</div>;
+    return <SkeletonDocumentDetail />;
   }
 
   if (!doc) {

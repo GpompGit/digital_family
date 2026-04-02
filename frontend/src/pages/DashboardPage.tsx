@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getDocuments, getCategories, getUsers, getInstitutions, getTags } from '../services/api';
+import { SkeletonDocumentList } from '../components/Skeleton';
 import type { Document, Category, User, Institution, Tag, DocumentFilters } from '../types';
 
 export default function DashboardPage() {
@@ -177,7 +178,7 @@ export default function DashboardPage() {
 
       {/* Document list */}
       {loading ? (
-        <div className="text-center py-12 text-gray-400">{t('common.loading')}</div>
+        <SkeletonDocumentList count={5} />
       ) : documents.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-400 mb-4">{t('dashboard.noDocuments')}</p>
