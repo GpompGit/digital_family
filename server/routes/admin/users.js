@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import pool from '../../db/connection.js';
 import requireAdmin from '../../middleware/requireAdmin.js';
+import { validatePassword } from '../../utils/validation.js';
+import { logAudit } from '../../utils/audit.js';
 
 const router = Router();
 
@@ -32,6 +34,8 @@ router.post('/', requireAdmin, async (req, res) => {
 
     let passwordHash = null;
     if (password) {
+      const passwordError = validatePassword(password);
+      if (passwordError) return res.status(400).json({ error: passwordError });
       const bcrypt = await import('bcrypt');
       passwordHash = await bcrypt.default.hash(password, 10);
     }
@@ -41,6 +45,9 @@ router.post('/', requireAdmin, async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?)`,
       [email || null, passwordHash, first_name, last_name, role || 'member', can_login ? 1 : 0]
     );
+
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    await logAudit(req.session.userId, 'create', 'user', result.insertId, null, { first_name, last_name, role }, ip);
 
     res.status(201).json({ id: result.insertId, message: 'User created' });
   } catch (err) {
@@ -86,9 +93,8 @@ router.put('/:id/password', requireAdmin, async (req, res) => {
   try {
     const { password } = req.body;
 
-    if (!password || password.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
-    }
+    const passwordError = validatePassword(password);
+    if (passwordError) return res.status(400).json({ error: passwordError });
 
     const bcrypt = await import('bcrypt');
     const passwordHash = await bcrypt.default.hash(password, 10);

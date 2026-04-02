@@ -129,6 +129,27 @@ app.use(session({
   }
 }));
 
+// Session idle timeout — destroy session if no activity for 30 minutes.
+// The cookie maxAge (7 days) controls how long the cookie lives in the browser.
+// This middleware adds an ADDITIONAL check: if the user hasn't made any request
+// in 30 minutes, we destroy the session even if the cookie is still valid.
+// This protects against someone leaving a logged-in browser unattended.
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+app.use((req, res, next) => {
+  if (req.session && req.session.userId) {
+    const now = Date.now();
+    if (req.session.lastActivity && (now - req.session.lastActivity > IDLE_TIMEOUT_MS)) {
+      // Session has been idle too long — destroy it
+      return req.session.destroy(() => {
+        res.status(401).json({ error: 'Session expired due to inactivity' });
+      });
+    }
+    // Update last activity timestamp (touch the session)
+    req.session.lastActivity = now;
+  }
+  next();
+});
+
 // Rate limiting — prevents abuse by limiting how many requests a client can make.
 // Applied BEFORE routes so blocked requests never reach the handlers.
 // Admin routes get a stricter limit (60/min) than general API routes (120/min).

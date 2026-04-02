@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import pool from '../db/connection.js';
 import requireAuth from '../middleware/requireAuth.js';
+import { isSafeFilePath } from '../utils/validation.js';
+import { logAudit } from '../utils/audit.js';
 import { upload, getFilePath, buildDocumentPath, ensureDir, removeEmptyDir } from '../utils/fileStorage.js';
 import { uploadLimiter } from '../middleware/rateLimit.js';
 
@@ -167,6 +169,12 @@ router.get('/:uuid/file', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Document not found' });
     }
 
+    // Defense-in-depth: validate the stored file path hasn't been tampered with
+    if (!isSafeFilePath(documents[0].file_path)) {
+      console.error('Suspicious file_path in database:', documents[0].file_path);
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
+
     const filePath = getFilePath(documents[0].file_path);
 
     if (!fs.existsSync(filePath)) {
@@ -239,6 +247,9 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [uuid, req.session.userId, person_id, category_id, title, institution_id || null, document_date || null, relativePath, req.file.size, req.file.originalname, notes || null, expires_at || null]
     );
+
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    await logAudit(req.session.userId, 'create', 'document', null, uuid, { title, person_id, category_id }, ip);
 
     res.status(201).json({ uuid, message: 'Document uploaded' });
   } catch (err) {
@@ -319,6 +330,9 @@ router.put('/:uuid', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Document not found' });
     }
 
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    await logAudit(req.session.userId, 'update', 'document', null, req.params.uuid, { title, person_id, category_id }, ip);
+
     res.json({ message: 'Document updated' });
   } catch (err) {
     console.error('Update error:', err.message);
@@ -356,6 +370,9 @@ router.delete('/:uuid', requireAuth, async (req, res) => {
 
     // Delete from database
     await pool.query('DELETE FROM documents WHERE uuid = ?', [req.params.uuid]);
+
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    await logAudit(req.session.userId, 'delete', 'document', null, req.params.uuid, null, ip);
 
     res.json({ message: 'Document deleted' });
   } catch (err) {
