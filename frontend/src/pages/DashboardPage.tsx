@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getDocuments, getCategories, getUsers } from '../services/api';
 import type { Document, Category, User, DocumentFilters } from '../types';
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -14,7 +16,7 @@ export default function DashboardPage() {
 
   const [filters, setFilters] = useState<DocumentFilters>({
     category: '',
-    person: '',
+    person: undefined,
     q: '',
     sort: 'date_desc'
   });
@@ -46,8 +48,8 @@ export default function DashboardPage() {
   }, [filters]);
 
   function formatDate(dateStr: string | null) {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('de-CH');
+    if (!dateStr) return t('common.dash');
+    return new Date(dateStr).toLocaleDateString();
   }
 
   function formatSize(bytes: number) {
@@ -56,8 +58,6 @@ export default function DashboardPage() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  const personNames = users.map(u => `${u.first_name} ${u.last_name}`);
-
   return (
     <div>
       {/* Filters */}
@@ -65,7 +65,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <input
             type="search"
-            placeholder="Search..."
+            placeholder={t('dashboard.searchPlaceholder')}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={filters.q || ''}
             onChange={e => setFilters(f => ({ ...f, q: e.target.value }))}
@@ -75,19 +75,19 @@ export default function DashboardPage() {
             value={filters.category || ''}
             onChange={e => setFilters(f => ({ ...f, category: e.target.value }))}
           >
-            <option value="">All categories</option>
+            <option value="">{t('dashboard.allCategories')}</option>
             {categories.map(c => (
               <option key={c.id} value={c.slug}>{c.name}</option>
             ))}
           </select>
           <select
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filters.person || ''}
-            onChange={e => setFilters(f => ({ ...f, person: e.target.value }))}
+            value={filters.person ?? ''}
+            onChange={e => setFilters(f => ({ ...f, person: e.target.value ? parseInt(e.target.value) : undefined }))}
           >
-            <option value="">All family members</option>
-            {personNames.map(name => (
-              <option key={name} value={name}>{name}</option>
+            <option value="">{t('dashboard.allMembers')}</option>
+            {users.map(u => (
+              <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>
             ))}
           </select>
           <select
@@ -95,26 +95,26 @@ export default function DashboardPage() {
             value={filters.sort || 'date_desc'}
             onChange={e => setFilters(f => ({ ...f, sort: e.target.value }))}
           >
-            <option value="date_desc">Newest first</option>
-            <option value="date_asc">Oldest first</option>
-            <option value="title_asc">Title A-Z</option>
-            <option value="created_desc">Recently added</option>
+            <option value="date_desc">{t('dashboard.sortNewest')}</option>
+            <option value="date_asc">{t('dashboard.sortOldest')}</option>
+            <option value="title_asc">{t('dashboard.sortTitle')}</option>
+            <option value="created_desc">{t('dashboard.sortRecent')}</option>
           </select>
         </div>
       </div>
 
       {/* Results count */}
       <div className="text-sm text-gray-500 mb-3">
-        {total} document{total !== 1 ? 's' : ''} found
+        {t('dashboard.documentsFound', { count: total })}
       </div>
 
       {/* Document list */}
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading...</div>
+        <div className="text-center py-12 text-gray-400">{t('common.loading')}</div>
       ) : documents.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-400 mb-4">No documents found</p>
-          <Link to="/upload" className="text-blue-600 hover:underline">Upload your first document</Link>
+          <p className="text-gray-400 mb-4">{t('dashboard.noDocuments')}</p>
+          <Link to="/upload" className="text-blue-600 hover:underline">{t('dashboard.uploadFirst')}</Link>
         </div>
       ) : (
         <div className="space-y-2">
@@ -131,8 +131,8 @@ export default function DashboardPage() {
                     <span className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
                       {doc.category_name}
                     </span>
-                    <span>{doc.person_name}</span>
-                    {doc.institution && <span>{doc.institution}</span>}
+                    <span>{doc.person_first_name} {doc.person_last_name}</span>
+                    {doc.institution_name && <span>{doc.institution_name}</span>}
                     <span>{formatDate(doc.document_date)}</span>
                     <span>{formatSize(doc.file_size)}</span>
                   </div>
@@ -152,17 +152,17 @@ export default function DashboardPage() {
             onClick={() => loadDocuments(page - 1)}
             className="px-3 py-1 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-100"
           >
-            Previous
+            {t('dashboard.previous')}
           </button>
           <span className="px-3 py-1 text-sm text-gray-600">
-            {page} / {pages}
+            {t('dashboard.pageOf', { page, pages })}
           </span>
           <button
             disabled={page >= pages}
             onClick={() => loadDocuments(page + 1)}
             className="px-3 py-1 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-100"
           >
-            Next
+            {t('dashboard.next')}
           </button>
         </div>
       )}

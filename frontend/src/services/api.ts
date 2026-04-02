@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Category, Document, DocumentsResponse, DocumentFilters, User } from '../types';
+import type { Category, Document, DocumentsResponse, DocumentFilters, User, Institution } from '../types';
 
 const api = axios.create({
   baseURL: '/',
@@ -12,8 +12,8 @@ export async function checkAuth(): Promise<{ authenticated: boolean; user?: User
   return data;
 }
 
-export async function login(email: string): Promise<{ message: string }> {
-  const { data } = await api.post('/auth/login', { email });
+export async function login(email: string, password: string): Promise<{ message: string }> {
+  const { data } = await api.post('/auth/login', { email, password });
   return data;
 }
 
@@ -30,6 +30,12 @@ export async function getCategories(): Promise<Category[]> {
 // Users
 export async function getUsers(): Promise<User[]> {
   const { data } = await api.get('/api/users');
+  return data;
+}
+
+// Institutions
+export async function getInstitutions(): Promise<Institution[]> {
+  const { data } = await api.get('/api/institutions');
   return data;
 }
 

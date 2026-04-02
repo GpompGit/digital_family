@@ -1,37 +1,42 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { uploadDocument, getCategories, getUsers } from '../services/api';
-import type { Category, User } from '../types';
+import { useTranslation } from 'react-i18next';
+import { uploadDocument, getCategories, getUsers, getInstitutions } from '../services/api';
+import type { Category, User, Institution } from '../types';
 
 interface UploadForm {
   title: string;
-  person_name: string;
+  person_id: string;
   category_id: string;
-  institution: string;
+  institution_id: string;
   document_date: string;
+  expires_at: string;
   notes: string;
 }
 
 export default function UploadPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm<UploadForm>();
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([getCategories(), getUsers()]).then(([cats, usrs]) => {
+    Promise.all([getCategories(), getUsers(), getInstitutions()]).then(([cats, usrs, insts]) => {
       setCategories(cats);
       setUsers(usrs);
+      setInstitutions(insts);
     });
   }, []);
 
   async function onSubmit(data: UploadForm) {
     if (!file) {
-      setError('Please select a PDF file');
+      setError(t('upload.fileRequired'));
       return;
     }
 
@@ -42,26 +47,25 @@ export default function UploadPage() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('title', data.title);
-      formData.append('person_name', data.person_name);
+      formData.append('person_id', data.person_id);
       formData.append('category_id', data.category_id);
-      if (data.institution) formData.append('institution', data.institution);
+      if (data.institution_id) formData.append('institution_id', data.institution_id);
       if (data.document_date) formData.append('document_date', data.document_date);
+      if (data.expires_at) formData.append('expires_at', data.expires_at);
       if (data.notes) formData.append('notes', data.notes);
 
       const result = await uploadDocument(formData);
       navigate(`/documents/${result.uuid}`);
     } catch {
-      setError('Upload failed. Please try again.');
+      setError(t('upload.error'));
     } finally {
       setUploading(false);
     }
   }
 
-  const personNames = users.map(u => `${u.first_name} ${u.last_name}`);
-
   return (
     <div className="max-w-lg mx-auto">
-      <h1 className="text-xl font-bold mb-4">Upload Document</h1>
+      <h1 className="text-xl font-bold mb-4">{t('upload.title')}</h1>
 
       {error && (
         <div className="bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm mb-4">{error}</div>
@@ -70,7 +74,7 @@ export default function UploadPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
         {/* File */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">PDF File *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('upload.fileLabel')}</label>
           <input
             type="file"
             accept="application/pdf"
@@ -81,42 +85,42 @@ export default function UploadPage() {
 
         {/* Title */}
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">{t('upload.titleLabel')}</label>
           <input
             id="title"
             type="text"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. Work contract 2025"
-            {...register('title', { required: 'Title is required' })}
+            placeholder={t('upload.titlePlaceholder')}
+            {...register('title', { required: t('upload.titleRequired') })}
           />
           {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
         </div>
 
         {/* Person */}
         <div>
-          <label htmlFor="person_name" className="block text-sm font-medium text-gray-700 mb-1">Family member *</label>
+          <label htmlFor="person_id" className="block text-sm font-medium text-gray-700 mb-1">{t('upload.personLabel')}</label>
           <select
-            id="person_name"
+            id="person_id"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('person_name', { required: 'Family member is required' })}
+            {...register('person_id', { required: t('upload.personRequired') })}
           >
-            <option value="">Select...</option>
-            {personNames.map(name => (
-              <option key={name} value={name}>{name}</option>
+            <option value="">{t('common.select')}</option>
+            {users.map(u => (
+              <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>
             ))}
           </select>
-          {errors.person_name && <p className="text-red-500 text-xs mt-1">{errors.person_name.message}</p>}
+          {errors.person_id && <p className="text-red-500 text-xs mt-1">{errors.person_id.message}</p>}
         </div>
 
         {/* Category */}
         <div>
-          <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+          <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">{t('upload.categoryLabel')}</label>
           <select
             id="category_id"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('category_id', { required: 'Category is required' })}
+            {...register('category_id', { required: t('upload.categoryRequired') })}
           >
-            <option value="">Select...</option>
+            <option value="">{t('common.select')}</option>
             {categories.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -126,19 +130,22 @@ export default function UploadPage() {
 
         {/* Institution */}
         <div>
-          <label htmlFor="institution" className="block text-sm font-medium text-gray-700 mb-1">Institution</label>
-          <input
-            id="institution"
-            type="text"
+          <label htmlFor="institution_id" className="block text-sm font-medium text-gray-700 mb-1">{t('upload.institutionLabel')}</label>
+          <select
+            id="institution_id"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. Hospital, School, Employer"
-            {...register('institution')}
-          />
+            {...register('institution_id')}
+          >
+            <option value="">{t('common.select')}</option>
+            {institutions.map(i => (
+              <option key={i.id} value={i.id}>{i.name}</option>
+            ))}
+          </select>
         </div>
 
         {/* Document Date */}
         <div>
-          <label htmlFor="document_date" className="block text-sm font-medium text-gray-700 mb-1">Document date</label>
+          <label htmlFor="document_date" className="block text-sm font-medium text-gray-700 mb-1">{t('upload.dateLabel')}</label>
           <input
             id="document_date"
             type="date"
@@ -147,14 +154,25 @@ export default function UploadPage() {
           />
         </div>
 
+        {/* Expiry Date */}
+        <div>
+          <label htmlFor="expires_at" className="block text-sm font-medium text-gray-700 mb-1">{t('upload.expiresLabel')}</label>
+          <input
+            id="expires_at"
+            type="date"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('expires_at')}
+          />
+        </div>
+
         {/* Notes */}
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">{t('upload.notesLabel')}</label>
           <textarea
             id="notes"
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            placeholder="Optional notes..."
+            placeholder={t('upload.notesPlaceholder')}
             {...register('notes')}
           />
         </div>
@@ -164,7 +182,7 @@ export default function UploadPage() {
           disabled={uploading}
           className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
         >
-          {uploading ? 'Uploading...' : 'Upload Document'}
+          {uploading ? t('upload.submitting') : t('upload.submit')}
         </button>
       </form>
     </div>

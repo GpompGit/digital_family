@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getDocument, deleteDocument, getFileUrl } from '../services/api';
 import type { Document } from '../types';
 
 export default function DocumentPage() {
+  const { t } = useTranslation();
   const { uuid } = useParams<{ uuid: string }>();
   const navigate = useNavigate();
   const [doc, setDoc] = useState<Document | null>(null);
@@ -19,20 +21,20 @@ export default function DocumentPage() {
   }, [uuid, navigate]);
 
   async function handleDelete() {
-    if (!uuid || !confirm('Delete this document? This cannot be undone.')) return;
+    if (!uuid || !confirm(t('document.deleteConfirm'))) return;
     setDeleting(true);
     try {
       await deleteDocument(uuid);
       navigate('/');
     } catch {
-      alert('Failed to delete document');
+      alert(t('document.deleteError'));
       setDeleting(false);
     }
   }
 
   function formatDate(dateStr: string | null) {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('de-CH');
+    if (!dateStr) return t('common.dash');
+    return new Date(dateStr).toLocaleDateString();
   }
 
   function formatSize(bytes: number) {
@@ -42,18 +44,18 @@ export default function DocumentPage() {
   }
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-400">Loading...</div>;
+    return <div className="text-center py-12 text-gray-400">{t('common.loading')}</div>;
   }
 
   if (!doc) {
-    return <div className="text-center py-12 text-gray-400">Document not found</div>;
+    return <div className="text-center py-12 text-gray-400">{t('document.notFound')}</div>;
   }
 
   const fileUrl = getFileUrl(doc.uuid);
 
   return (
     <div className="max-w-lg mx-auto">
-      <Link to="/" className="text-sm text-blue-600 hover:underline mb-4 inline-block">&larr; Back</Link>
+      <Link to="/" className="text-sm text-blue-600 hover:underline mb-4 inline-block">{t('common.back')}</Link>
 
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h1 className="text-xl font-bold mb-1">{doc.title}</h1>
@@ -63,34 +65,46 @@ export default function DocumentPage() {
 
         <dl className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <dt className="text-gray-500">Person</dt>
-            <dd className="font-medium">{doc.person_name}</dd>
+            <dt className="text-gray-500">{t('document.person')}</dt>
+            <dd className="font-medium">{doc.person_first_name} {doc.person_last_name}</dd>
           </div>
-          {doc.institution && (
+          {doc.institution_name && (
             <div className="flex justify-between">
-              <dt className="text-gray-500">Institution</dt>
-              <dd className="font-medium">{doc.institution}</dd>
+              <dt className="text-gray-500">{t('document.institution')}</dt>
+              <dd className="font-medium">{doc.institution_name}</dd>
             </div>
           )}
           <div className="flex justify-between">
-            <dt className="text-gray-500">Document date</dt>
+            <dt className="text-gray-500">{t('document.documentDate')}</dt>
             <dd className="font-medium">{formatDate(doc.document_date)}</dd>
           </div>
+          {doc.expires_at && (
+            <div className="flex justify-between">
+              <dt className="text-gray-500">{t('document.expiryDate')}</dt>
+              <dd className="font-medium">{formatDate(doc.expires_at)}</dd>
+            </div>
+          )}
           <div className="flex justify-between">
-            <dt className="text-gray-500">File</dt>
+            <dt className="text-gray-500">{t('document.file')}</dt>
             <dd className="font-medium">{doc.original_filename} ({formatSize(doc.file_size)})</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-gray-500">Uploaded by</dt>
+            <dt className="text-gray-500">{t('document.uploadedBy')}</dt>
             <dd className="font-medium">{doc.uploaded_by_first} {doc.uploaded_by_last}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-gray-500">Added</dt>
+            <dt className="text-gray-500">{t('document.added')}</dt>
             <dd className="font-medium">{formatDate(doc.created_at)}</dd>
           </div>
+          {doc.version > 1 && (
+            <div className="flex justify-between">
+              <dt className="text-gray-500">{t('document.version')}</dt>
+              <dd className="font-medium">{doc.version}</dd>
+            </div>
+          )}
           {doc.notes && (
             <div>
-              <dt className="text-gray-500 mb-1">Notes</dt>
+              <dt className="text-gray-500 mb-1">{t('document.notes')}</dt>
               <dd className="text-gray-700 bg-gray-50 p-3 rounded-lg">{doc.notes}</dd>
             </div>
           )}
@@ -104,27 +118,27 @@ export default function DocumentPage() {
             rel="noopener noreferrer"
             className="block w-full text-center bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 font-medium"
           >
-            View PDF
+            {t('document.viewPdf')}
           </a>
           <a
             href={fileUrl}
             download={doc.original_filename}
             className="block w-full text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 font-medium"
           >
-            Download
+            {t('document.download')}
           </a>
           <Link
             to={`/documents/${doc.uuid}/edit`}
             className="block w-full text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 font-medium"
           >
-            Edit
+            {t('document.edit')}
           </Link>
           <button
             onClick={handleDelete}
             disabled={deleting}
             className="w-full text-center border border-red-300 text-red-600 py-2.5 rounded-lg hover:bg-red-50 font-medium disabled:opacity-50"
           >
-            {deleting ? 'Deleting...' : 'Delete'}
+            {deleting ? t('document.deleting') : t('document.delete')}
           </button>
         </div>
       </div>
