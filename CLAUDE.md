@@ -2,13 +2,13 @@
 
 ## Overview
 
-A self-hosted family document management system for 4 family members. Users scan physical documents with their iPhone (using the built-in document scanner in Notes/Files) and upload the resulting PDFs through a mobile-friendly React UI. Each document is categorized, tagged with metadata (date, title, institution, person), and stored on the Synology NAS filesystem. The app provides fast filtering and search so any family member can instantly find and view or print a document from their phone.
+A self-hosted family document management system for 4 family members and 2 pets. Users scan physical documents with their iPhone (using the built-in document scanner in Notes/Files) and upload the resulting PDFs through a mobile-friendly React UI. Each document is categorized, tagged with metadata (date, title, institution, person, tags, custom fields), and stored on the Synology NAS filesystem. The app provides fast filtering, full-text search (including future OCR content), document expiry reminders, versioning, auto-matching rules, and a full audit trail. Any family member can instantly find, view, or print a document from their phone.
 
 **Domain:** `digitalfamily.carbonnull.ch` (via Cloudflare Tunnel)
 
 ## Goals
 
-- Passwordless magic-link login for 4 family members
+- Email + password login for family members (iPhone Face ID autofill compatible)
 - Upload PDF documents with metadata (title, date, institution, category, person)
 - Categorize documents: working attestation, exams, titles, vaccines, contracts, insurance, ID documents, receipts, medical records, certificates
 - Filter and search by category, person, date range, title, institution
@@ -120,19 +120,12 @@ digital_family/
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | INT AUTO_INCREMENT | Primary key |
-| `email` | VARCHAR(255) UNIQUE | Login identifier |
+| `email` | VARCHAR(255) UNIQUE NULL | Login identifier (NULL for pets/non-login members) |
+| `password_hash` | VARCHAR(255) NULL | bcrypt hash (NULL for non-login members) |
 | `first_name` | VARCHAR(100) | Display name |
 | `last_name` | VARCHAR(100) | Family name |
-| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
-
-### `magic_tokens`
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | INT AUTO_INCREMENT | Primary key |
-| `user_id` | INT | FK → users.id |
-| `token` | VARCHAR(64) UNIQUE | crypto.randomBytes(32).toString('hex') |
-| `used` | BOOLEAN | DEFAULT FALSE |
-| `expires_at` | DATETIME | NOW() + 15 minutes |
+| `role` | ENUM('admin','member') | DEFAULT 'member' |
+| `can_login` | BOOLEAN | DEFAULT FALSE |
 | `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
 
 ### `categories`
@@ -144,38 +137,117 @@ digital_family/
 
 **Default categories:** working_attestation, exams, titles, vaccines, contracts, insurance, id_documents, receipts, medical_records, certificates
 
+### `institutions`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | INT AUTO_INCREMENT | Primary key |
+| `name` | VARCHAR(255) UNIQUE | Institution display name |
+| `slug` | VARCHAR(255) UNIQUE | URL-safe identifier |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
+
+### `tags`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | INT AUTO_INCREMENT | Primary key |
+| `name` | VARCHAR(100) UNIQUE | Tag display name |
+| `slug` | VARCHAR(100) UNIQUE | URL-safe identifier |
+| `color` | CHAR(7) | Hex color, DEFAULT '#6B7280' |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
+
 ### `documents`
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | INT AUTO_INCREMENT | Primary key |
 | `uuid` | CHAR(36) UNIQUE | Public identifier (used in file paths) |
 | `user_id` | INT | FK → users.id (who uploaded) |
-| `person_name` | VARCHAR(200) | Which family member the doc belongs to |
+| `person_id` | INT | FK → users.id (who the document belongs to) |
 | `category_id` | INT | FK → categories.id |
+| `institution_id` | INT NULL | FK → institutions.id (ON DELETE SET NULL) |
 | `title` | VARCHAR(255) | Document title |
-| `institution` | VARCHAR(255) | Issuing institution (hospital, school, employer, etc.) |
 | `document_date` | DATE | Date on the document |
 | `file_path` | VARCHAR(500) | Relative path under uploads/ |
 | `file_size` | INT | File size in bytes |
 | `original_filename` | VARCHAR(255) | Original upload filename |
 | `notes` | TEXT | Optional notes |
+| `extracted_text` | MEDIUMTEXT NULL | OCR-extracted content for full-text search |
+| `expires_at` | DATE NULL | Document expiry date for reminders |
+| `reminder_sent` | BOOLEAN | DEFAULT FALSE, prevents duplicate notifications |
+| `version` | INT | DEFAULT 1 |
+| `parent_uuid` | CHAR(36) NULL | FK → documents.uuid (ON DELETE SET NULL), links versions |
 | `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
 | `updated_at` | DATETIME | ON UPDATE CURRENT_TIMESTAMP |
 
-**Indexes:** `category_id`, `user_id`, `person_name`, `document_date`, `institution`
+**Indexes:** `category_id`, `user_id`, `person_id`, `document_date`, `institution_id`, `expires_at`, `parent_uuid`, `(parent_uuid, version)`, FULLTEXT on `(title, extracted_text)`
+
+### `document_tags`
+| Column | Type | Notes |
+|--------|------|-------|
+| `document_id` | INT | FK → documents.id (ON DELETE CASCADE) |
+| `tag_id` | INT | FK → tags.id (ON DELETE CASCADE) |
+
+**Primary key:** `(document_id, tag_id)`
+
+### `custom_field_definitions`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | INT AUTO_INCREMENT | Primary key |
+| `name` | VARCHAR(100) UNIQUE | Field display name |
+| `slug` | VARCHAR(100) UNIQUE | URL-safe identifier |
+| `data_type` | ENUM('string','date','integer','boolean','monetary','url') | Value type |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
+
+### `document_custom_fields`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | INT AUTO_INCREMENT | Primary key |
+| `document_id` | INT | FK → documents.id (ON DELETE CASCADE) |
+| `field_id` | INT | FK → custom_field_definitions.id (ON DELETE CASCADE) |
+| `value_string` | VARCHAR(500) NULL | Used when data_type = 'string' or 'url' |
+| `value_date` | DATE NULL | Used when data_type = 'date' |
+| `value_integer` | INT NULL | Used when data_type = 'integer' |
+| `value_boolean` | BOOLEAN NULL | Used when data_type = 'boolean' |
+| `value_decimal` | DECIMAL(12,2) NULL | Used when data_type = 'monetary' |
+
+**Unique constraint:** `(document_id, field_id)`
+
+### `matching_rules`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | INT AUTO_INCREMENT | Primary key |
+| `entity_type` | ENUM('tag','category','institution') | Which entity to auto-assign |
+| `entity_id` | INT | Polymorphic FK to tags/categories/institutions |
+| `match_pattern` | VARCHAR(500) | Pattern to match against extracted_text |
+| `matching_algorithm` | ENUM('exact','any_word','all_words','regex','fuzzy') | DEFAULT 'any_word' |
+| `is_active` | BOOLEAN | DEFAULT TRUE |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
+
+### `audit_log`
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | INT AUTO_INCREMENT | Primary key |
+| `user_id` | INT NULL | FK → users.id (ON DELETE SET NULL) |
+| `action` | ENUM('create','update','delete','login','logout','download') | What happened |
+| `entity_type` | VARCHAR(50) | e.g. 'document', 'user', 'tag' |
+| `entity_id` | INT NULL | ID of affected entity |
+| `entity_uuid` | CHAR(36) NULL | UUID of affected entity (for documents) |
+| `details` | JSON NULL | Additional context |
+| `ip_address` | VARCHAR(45) | Client IP (supports IPv6) |
+| `created_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP |
+
+**Indexes:** `(entity_type, entity_uuid)`, `user_id`, `created_at`
 
 ## Authentication
 
-Magic link passwordless flow (same pattern as Find_my_owner):
+Email + password login with bcrypt hashing (iPhone Face ID autofill compatible):
 
-1. User enters email on login page
-2. Server generates `crypto.randomBytes(32)` token, stores in `magic_tokens` with 15-minute expiry
-3. Email sent with link: `https://digitalfamily.carbonnull.ch/auth/verify?token=<token>`
-4. User clicks link → server validates token (not expired, not used), marks `used=TRUE`
-5. Server creates session with `userId` → redirects to dashboard
+1. User enters email and password on login page
+2. Server looks up user by email, verifies `can_login = TRUE`
+3. Server compares password against `password_hash` using bcrypt
+4. On success, server creates session with `userId` → redirects to dashboard
+5. On iPhone, Safari offers to save credentials → Face ID autofills on next visit
 6. Session config: `secure: true`, `httpOnly: true`, `sameSite: 'lax'`
 
-Only 4 pre-registered family members can log in. No self-registration — users are seeded in the database.
+Only pre-registered family members can log in. No self-registration — admin creates users and sets initial passwords. Pets (cats) are in the users table but with `can_login = FALSE` and no password.
 
 ## API Endpoints
 
@@ -183,8 +255,7 @@ Only 4 pre-registered family members can log in. No self-registration — users 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/auth/login` | No | Login page |
-| POST | `/auth/login` | No | Send magic link email |
-| GET | `/auth/verify` | No | Verify magic link token |
+| POST | `/auth/login` | No | Verify email + password, create session |
 | POST | `/auth/logout` | Yes | Destroy session |
 
 ### Documents
@@ -209,10 +280,12 @@ Only 4 pre-registered family members can log in. No self-registration — users 
 
 ### Query Parameters for `GET /api/documents`
 - `category` — filter by category slug
-- `person` — filter by person_name
-- `institution` — filter by institution (partial match)
-- `q` — full-text search on title, institution, notes
+- `person` — filter by person_id (user ID)
+- `institution` — filter by institution_id
+- `tag` — filter by tag slug
+- `q` — full-text search on title, extracted_text (uses FULLTEXT index)
 - `from` / `to` — date range filter on document_date
+- `expiring_before` — filter documents expiring before a given date
 - `sort` — `date_desc` (default), `date_asc`, `title_asc`, `created_desc`
 - `page` / `limit` — pagination (default limit: 20)
 
@@ -335,12 +408,12 @@ DB_USER=digital_family
 DB_PASSWORD=<strong-password>
 DB_ROOT_PASSWORD=<strong-root-password>
 
-# Email (magic links)
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=<email>
-SMTP_PASS=<password>
-SMTP_FROM=noreply@carbonnull.ch
+# Email (optional — for future notification features)
+# SMTP_HOST=smtp.example.com
+# SMTP_PORT=587
+# SMTP_USER=<email>
+# SMTP_PASS=<password>
+# SMTP_FROM=noreply@carbonnull.ch
 
 # Cloudflare
 CLOUDFLARE_TUNNEL_TOKEN=<tunnel-token>
@@ -363,7 +436,7 @@ MAX_FILE_SIZE=26214400
 | `express-session` | Session management |
 | `connect-session-knex` or `express-mysql-session` | Session store in MariaDB |
 | `multer` | File upload handling |
-| `nodemailer` | Magic link emails |
+| `bcrypt` | Password hashing |
 | `helmet` | Security headers |
 | `cors` | CORS configuration |
 | `express-rate-limit` | Rate limiting |
@@ -449,12 +522,12 @@ See `.claude/rules/` for detailed rules. Summary:
 5. [ ] Start containers: `docker compose up -d`
 6. [ ] Verify MariaDB is running: `docker compose exec db mysql -u root -p -e "SHOW DATABASES;"`
 7. [ ] Seed database with schema: auto-runs from `docker-entrypoint-initdb.d`
-8. [ ] Seed 4 family members in `users` table
-9. [ ] Seed default categories in `categories` table
+8. [ ] Seed family members (4 humans + 2 cats) in `users` table
+9. [ ] Seed default categories, institutions, and tags
 10. [ ] Configure Cloudflare Tunnel: create tunnel, add DNS route for `digitalfamily.carbonnull.ch`
 11. [ ] Set `CLOUDFLARE_TUNNEL_TOKEN` in `.env`
 12. [ ] Verify HTTPS access: `https://digitalfamily.carbonnull.ch`
-13. [ ] Test magic link login flow end-to-end
+13. [ ] Test email + password login flow end-to-end (verify Face ID autofill on iPhone)
 14. [ ] Configure GitHub webhook: repo Settings → Webhooks → `https://digitalfamily.carbonnull.ch/deploy`
 15. [ ] Set `GITHUB_WEBHOOK_SECRET` in `.env` (same as webhook secret in GitHub)
 16. [ ] Test webhook: push a commit, verify auto-deploy
@@ -463,12 +536,11 @@ See `.claude/rules/` for detailed rules. Summary:
 
 ## Future Extensions
 
-- OCR text extraction from PDFs (searchable content)
-- Document expiry reminders (e.g., insurance renewal, vaccine boosters)
+- OCR processing pipeline (populate `extracted_text` via Tesseract.js or external service)
 - Shared family calendar integration
 - Thumbnail generation for document previews
 - Bulk upload (multiple PDFs at once)
-- Document versioning (re-upload updated version)
-- Email notifications when a new document is uploaded
+- Email notifications when a new document is uploaded (requires SMTP configuration)
 - Export all documents as ZIP archive
 - Multi-language support (DE/EN/FR)
+- Auto-matching rule engine (use `matching_rules` + `extracted_text` to auto-suggest tags/categories)
