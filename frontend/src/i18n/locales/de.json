@@ -29,6 +29,10 @@
     "searchPlaceholder": "Suchen...",
     "allCategories": "Alle Kategorien",
     "allMembers": "Alle Familienmitglieder",
+    "allInstitutions": "Alle Institutionen",
+    "allTags": "Alle Schlagw\u00f6rter",
+    "dateFrom": "Von",
+    "dateTo": "Bis",
     "sortNewest": "Neueste zuerst",
     "sortOldest": "\u00c4lteste zuerst",
     "sortTitle": "Titel A\u2013Z",
@@ -79,8 +83,13 @@
     "edit": "Bearbeiten",
     "delete": "L\u00f6schen",
     "deleting": "Wird gel\u00f6scht...",
+    "print": "Drucken",
+    "share": "Teilen",
+    "shareTitle": "Dokument: {{title}}",
+    "shareNotSupported": "Teilen wird auf diesem Ger\u00e4t nicht unterst\u00fctzt",
     "deleteConfirm": "Dieses Dokument l\u00f6schen? Dies kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
-    "deleteError": "Dokument konnte nicht gel\u00f6scht werden"
+    "deleteError": "Dokument konnte nicht gel\u00f6scht werden",
+    "deleteForbidden": "Nur der Hochladende oder ein Admin kann dieses Dokument l\u00f6schen"
   },
   "editDocument": {
     "title": "Dokument bearbeiten",

@@ -1,23 +1,30 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getDocuments, getCategories, getUsers } from '../services/api';
-import type { Document, Category, User, DocumentFilters } from '../types';
+import { getDocuments, getCategories, getUsers, getInstitutions, getTags } from '../services/api';
+import type { Document, Category, User, Institution, Tag, DocumentFilters } from '../types';
 
 export default function DashboardPage() {
   const { t } = useTranslation();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
 
   const [filters, setFilters] = useState<DocumentFilters>({
     category: '',
     person: undefined,
+    institution: undefined,
+    tag: '',
     q: '',
+    from: '',
+    to: '',
     sort: 'date_desc'
   });
 
@@ -37,10 +44,14 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    Promise.all([getCategories(), getUsers()]).then(([cats, usrs]) => {
-      setCategories(cats);
-      setUsers(usrs);
-    });
+    Promise.all([getCategories(), getUsers(), getInstitutions(), getTags()]).then(
+      ([cats, usrs, insts, tgs]) => {
+        setCategories(cats);
+        setUsers(usrs);
+        setInstitutions(insts);
+        setTags(tgs);
+      }
+    );
   }, []);
 
   useEffect(() => {
@@ -58,10 +69,13 @@ export default function DashboardPage() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  const hasActiveFilters = filters.institution || filters.tag || filters.from || filters.to;
+
   return (
     <div>
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+        {/* Row 1: search, category, person, sort */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <input
             type="search"
@@ -101,6 +115,59 @@ export default function DashboardPage() {
             <option value="created_desc">{t('dashboard.sortRecent')}</option>
           </select>
         </div>
+
+        {/* Toggle more filters */}
+        <button
+          onClick={() => setShowMoreFilters(!showMoreFilters)}
+          className={`mt-2 text-xs ${hasActiveFilters ? 'text-blue-600 font-medium' : 'text-gray-400'} hover:text-blue-600`}
+        >
+          {showMoreFilters ? '- Less filters' : '+ More filters'}
+          {hasActiveFilters && !showMoreFilters && ' (active)'}
+        </button>
+
+        {/* Row 2: institution, tag, date range */}
+        {showMoreFilters && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3 pt-3 border-t border-gray-100">
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={filters.institution ?? ''}
+              onChange={e => setFilters(f => ({ ...f, institution: e.target.value ? parseInt(e.target.value) : undefined }))}
+            >
+              <option value="">{t('dashboard.allInstitutions')}</option>
+              {institutions.map(i => (
+                <option key={i.id} value={i.id}>{i.name}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={filters.tag || ''}
+              onChange={e => setFilters(f => ({ ...f, tag: e.target.value }))}
+            >
+              <option value="">{t('dashboard.allTags')}</option>
+              {tags.map(tg => (
+                <option key={tg.id} value={tg.slug}>{tg.name}</option>
+              ))}
+            </select>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-400 shrink-0">{t('dashboard.dateFrom')}</label>
+              <input
+                type="date"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={filters.from || ''}
+                onChange={e => setFilters(f => ({ ...f, from: e.target.value }))}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-400 shrink-0">{t('dashboard.dateTo')}</label>
+              <input
+                type="date"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={filters.to || ''}
+                onChange={e => setFilters(f => ({ ...f, to: e.target.value }))}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Results count */}

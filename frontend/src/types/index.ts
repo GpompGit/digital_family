@@ -36,6 +36,7 @@ export interface Tag {
 export interface Document {
   id: number;
   uuid: string;
+  user_id: number;
   person_id: number;
   person_first_name: string;
   person_last_name: string;

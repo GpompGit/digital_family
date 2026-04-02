@@ -127,7 +127,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:uuid', requireAuth, async (req, res) => {
   try {
     const [documents] = await pool.query(
-      `SELECT d.id, d.uuid, d.person_id, d.title,
+      `SELECT d.id, d.uuid, d.user_id, d.person_id, d.title,
               d.document_date, d.file_size, d.original_filename, d.notes,
               d.expires_at, d.reminder_sent, d.version, d.parent_uuid,
               d.created_at, d.updated_at,
@@ -326,16 +326,24 @@ router.put('/:uuid', requireAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/documents/:uuid
+// DELETE /api/documents/:uuid — only uploader or admin can delete
 router.delete('/:uuid', requireAuth, async (req, res) => {
   try {
     const [documents] = await pool.query(
-      'SELECT file_path FROM documents WHERE uuid = ?',
+      'SELECT file_path, user_id FROM documents WHERE uuid = ?',
       [req.params.uuid]
     );
 
     if (documents.length === 0) {
       return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // Check ownership: only the uploader or an admin can delete
+    const [[currentUser]] = await pool.query(
+      'SELECT role FROM users WHERE id = ?', [req.session.userId]
+    );
+    if (documents[0].user_id !== req.session.userId && currentUser?.role !== 'admin') {
+      return res.status(403).json({ error: 'Only the uploader or an admin can delete this document' });
     }
 
     // Delete file from disk

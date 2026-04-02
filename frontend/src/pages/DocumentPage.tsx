@@ -1,11 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Document as PdfDocument, Page } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+import { useAuth } from '../context/AuthContext';
 import { getDocument, deleteDocument, getFileUrl } from '../services/api';
 import type { Document } from '../types';
 
 export default function DocumentPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { uuid } = useParams<{ uuid: string }>();
   const navigate = useNavigate();
   const [doc, setDoc] = useState<Document | null>(null);
@@ -20,6 +25,8 @@ export default function DocumentPage() {
       .finally(() => setLoading(false));
   }, [uuid, navigate]);
 
+  const canDelete = doc && user && (doc.user_id === user.id || user.role === 'admin');
+
   async function handleDelete() {
     if (!uuid || !confirm(t('document.deleteConfirm'))) return;
     setDeleting(true);
@@ -31,6 +38,42 @@ export default function DocumentPage() {
       setDeleting(false);
     }
   }
+
+  const handlePrint = useCallback(() => {
+    if (!doc) return;
+    const url = getFileUrl(doc.uuid);
+    const printWindow = window.open(url, '_blank');
+    if (printWindow) {
+      printWindow.addEventListener('load', () => {
+        printWindow.print();
+      });
+    }
+  }, [doc]);
+
+  const handleShare = useCallback(async () => {
+    if (!doc) return;
+    const url = window.location.href;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: t('document.shareTitle', { title: doc.title }),
+          text: `${doc.title} — ${doc.category_name}`,
+          url,
+        });
+      } catch {
+        // user cancelled share — ignore
+      }
+    } else {
+      // Fallback: copy URL to clipboard
+      try {
+        await navigator.clipboard.writeText(url);
+        alert(t('document.shareNotSupported'));
+      } catch {
+        alert(t('document.shareNotSupported'));
+      }
+    }
+  }, [doc, t]);
 
   function formatDate(dateStr: string | null) {
     if (!dateStr) return t('common.dash');
@@ -58,11 +101,26 @@ export default function DocumentPage() {
       <Link to="/" className="text-sm text-blue-600 hover:underline mb-4 inline-block">{t('common.back')}</Link>
 
       <div className="bg-white rounded-xl shadow-sm p-6">
+        {/* PDF Preview — first page thumbnail */}
+        <div className="mb-5 flex justify-center">
+          <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-gray-50">
+            <PdfDocument
+              file={fileUrl}
+              loading={<div className="w-[280px] h-[360px] flex items-center justify-center text-gray-400 text-sm">{t('common.loading')}</div>}
+              error={<div className="w-[280px] h-[100px] flex items-center justify-center text-gray-400 text-xs">PDF preview unavailable</div>}
+            >
+              <Page pageNumber={1} width={280} renderAnnotationLayer={false} renderTextLayer={false} />
+            </PdfDocument>
+          </div>
+        </div>
+
+        {/* Title and category */}
         <h1 className="text-xl font-bold mb-1">{doc.title}</h1>
         <span className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-xs mb-4">
           {doc.category_name}
         </span>
 
+        {/* Metadata */}
         <dl className="space-y-3 text-sm">
           <div className="flex justify-between">
             <dt className="text-gray-500">{t('document.person')}</dt>
@@ -112,6 +170,7 @@ export default function DocumentPage() {
 
         {/* Actions */}
         <div className="mt-6 space-y-2">
+          {/* Primary: View PDF */}
           <a
             href={fileUrl}
             target="_blank"
@@ -120,26 +179,46 @@ export default function DocumentPage() {
           >
             {t('document.viewPdf')}
           </a>
-          <a
-            href={fileUrl}
-            download={doc.original_filename}
-            className="block w-full text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 font-medium"
-          >
-            {t('document.download')}
-          </a>
-          <Link
-            to={`/documents/${doc.uuid}/edit`}
-            className="block w-full text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 font-medium"
-          >
-            {t('document.edit')}
-          </Link>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="w-full text-center border border-red-300 text-red-600 py-2.5 rounded-lg hover:bg-red-50 font-medium disabled:opacity-50"
-          >
-            {deleting ? t('document.deleting') : t('document.delete')}
-          </button>
+
+          {/* Secondary actions in a 2-column grid */}
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href={fileUrl}
+              download={doc.original_filename}
+              className="text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 font-medium text-sm"
+            >
+              {t('document.download')}
+            </a>
+            <button
+              onClick={handlePrint}
+              className="text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 font-medium text-sm"
+            >
+              {t('document.print')}
+            </button>
+            <button
+              onClick={handleShare}
+              className="text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 font-medium text-sm"
+            >
+              {t('document.share')}
+            </button>
+            <Link
+              to={`/documents/${doc.uuid}/edit`}
+              className="text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 font-medium text-sm"
+            >
+              {t('document.edit')}
+            </Link>
+          </div>
+
+          {/* Delete — only visible to uploader or admin */}
+          {canDelete && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="w-full text-center border border-red-300 text-red-600 py-2.5 rounded-lg hover:bg-red-50 font-medium disabled:opacity-50"
+            >
+              {deleting ? t('document.deleting') : t('document.delete')}
+            </button>
+          )}
         </div>
       </div>
     </div>

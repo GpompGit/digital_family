@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Category, Document, DocumentsResponse, DocumentFilters, User, Institution } from '../types';
+import type { Category, Document, DocumentsResponse, DocumentFilters, User, Institution, Tag } from '../types';
 
 const api = axios.create({
   baseURL: '/',
@@ -36,6 +36,12 @@ export async function getUsers(): Promise<User[]> {
 // Institutions
 export async function getInstitutions(): Promise<Institution[]> {
   const { data } = await api.get('/api/institutions');
+  return data;
+}
+
+// Tags
+export async function getTags(): Promise<Tag[]> {
+  const { data } = await api.get('/api/tags');
   return data;
 }
 

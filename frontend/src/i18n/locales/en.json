@@ -29,6 +29,10 @@
     "searchPlaceholder": "Search...",
     "allCategories": "All categories",
     "allMembers": "All family members",
+    "allInstitutions": "All institutions",
+    "allTags": "All tags",
+    "dateFrom": "From",
+    "dateTo": "To",
     "sortNewest": "Newest first",
     "sortOldest": "Oldest first",
     "sortTitle": "Title A\u2013Z",
@@ -79,8 +83,13 @@
     "edit": "Edit",
     "delete": "Delete",
     "deleting": "Deleting...",
+    "print": "Print",
+    "share": "Share",
+    "shareTitle": "Document: {{title}}",
+    "shareNotSupported": "Sharing is not supported on this device",
     "deleteConfirm": "Delete this document? This cannot be undone.",
-    "deleteError": "Failed to delete document"
+    "deleteError": "Failed to delete document",
+    "deleteForbidden": "Only the uploader or an admin can delete this document"
   },
   "editDocument": {
     "title": "Edit Document",

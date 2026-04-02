@@ -29,6 +29,10 @@
     "searchPlaceholder": "Buscar...",
     "allCategories": "Todas las categor\u00edas",
     "allMembers": "Todos los miembros",
+    "allInstitutions": "Todas las instituciones",
+    "allTags": "Todas las etiquetas",
+    "dateFrom": "Desde",
+    "dateTo": "Hasta",
     "sortNewest": "M\u00e1s recientes",
     "sortOldest": "M\u00e1s antiguos",
     "sortTitle": "T\u00edtulo A\u2013Z",
@@ -79,8 +83,13 @@
     "edit": "Editar",
     "delete": "Eliminar",
     "deleting": "Eliminando...",
+    "print": "Imprimir",
+    "share": "Compartir",
+    "shareTitle": "Documento: {{title}}",
+    "shareNotSupported": "Compartir no est\u00e1 disponible en este dispositivo",
     "deleteConfirm": "\u00bfEliminar este documento? Esta acci\u00f3n no se puede deshacer.",
-    "deleteError": "No se pudo eliminar el documento"
+    "deleteError": "No se pudo eliminar el documento",
+    "deleteForbidden": "Solo quien subi\u00f3 el documento o un admin puede eliminarlo"
   },
   "editDocument": {
     "title": "Editar documento",
