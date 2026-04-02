@@ -1,8 +1,8 @@
 # Digital Family — Sprint Plan
 
 > **Branch:** `claude/plan-database-schema-pe7Y7`
-> **Last updated:** 2026-04-02
-> **Status:** Sprint 1, task 1.1 complete. Next: task 1.2 (code comments)
+> **Last updated:** 2026-04-03
+> **Status:** Sprint 1, tasks 1.1/1.2/1.6/1.7 complete. Next: task 1.3 (toast notifications)
 
 ---
 
@@ -18,6 +18,11 @@
 | 6 | `f67f344` | Enhanced browsing — PDF thumbnail (react-pdf), tag/institution/date-range filters, print/share/download actions, owner-only delete |
 | 7 | `8a30f71` | Sprint plan document |
 | 8 | `fe418da` | Security hardening — honeypot, lockout, CSP, audit, sanitization |
+| 9 | `74f0126` | Sprint plan: add code comments task |
+| 10 | `1e3eb61` | Beginner-friendly comments: all backend files |
+| 11 | `6bbd344` | Beginner-friendly comments: frontend + infrastructure files |
+| 12 | `a1adc08` | Security: password complexity, idle timeout, CRUD audit, path traversal |
+| 13 | `ad039a3` | Error boundaries + loading skeleton screens |
 
 ### Current File Inventory
 
@@ -87,7 +92,7 @@
 
 **Files:** `server/routes/documents.js`, `server/routes/admin/*.js`, `server/utils/email.js`, `server/routes/deploy.js`, `server/app.js`
 
-### 1.2 Beginner-Friendly Code Comments
+### 1.2 Beginner-Friendly Code Comments ✅ DONE (commits `1e3eb61`, `6bbd344`)
 
 > Add educational comments throughout the codebase explaining **what** the code does and **why**, aimed at someone learning Node.js/Express/React/SQL for the first time.
 
@@ -164,7 +169,7 @@
 
 **Files:** `server/db/schema.sql`, `server/routes/auth.js`, `server/utils/email.js`, new frontend pages, locale files
 
-### 1.6 Error Boundaries
+### 1.6 Error Boundaries ✅ DONE (commit `ad039a3`)
 - [ ] Create `ErrorBoundary.tsx` component (catches React render errors)
 - [ ] Wrap the app (or route sections) with error boundary
 - [ ] Show a friendly "Something went wrong" page with a "Go home" button
@@ -172,7 +177,7 @@
 
 **Files:** new `frontend/src/components/ErrorBoundary.tsx`, `App.tsx`
 
-### 1.7 Loading Skeletons
+### 1.7 Loading Skeletons ✅ DONE (commit `ad039a3`)
 - [ ] Create `SkeletonCard.tsx` component (pulsing gray rectangles)
 - [ ] Replace "Loading..." text in DashboardPage, DocumentPage, EditDocumentPage
 - [ ] Add skeleton for PDF thumbnail while loading
@@ -391,11 +396,11 @@
 | UUID-based file paths | ✅ | fileStorage.js |
 | Webhook HMAC-SHA256 validation | ✅ | deploy.js |
 | X-Frame-Options / frame-ancestors | ✅ | Helmet CSP |
-| Password complexity rules | ⬜ | Sprint 1.1 remaining |
-| Session idle timeout | ⬜ | Sprint 1.1 remaining |
-| Document CRUD audit logging | ⬜ | Sprint 1.1 remaining |
-| Admin CRUD audit logging | ⬜ | Sprint 1.1 remaining |
-| File path traversal check | ⬜ | Sprint 1.1 remaining |
+| Password complexity rules | ✅ | validation.js (min 8 + letter + number) |
+| Session idle timeout (30 min) | ✅ | app.js middleware |
+| Document CRUD audit logging | ✅ | documents.js (create, update, delete) |
+| Admin user create audit logging | ✅ | admin/users.js |
+| File path traversal check | ✅ | documents.js (isSafeFilePath) |
 | Permissions-Policy header | ⬜ | Sprint 1.1 remaining |
 | Password reset with token | ⬜ | Sprint 1.4 |
 | Duplicate file detection | ⬜ | Sprint 6.2 |
