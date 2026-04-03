@@ -2,7 +2,7 @@
 
 > **Branch:** `claude/plan-database-schema-pe7Y7`
 > **Last updated:** 2026-04-03
-> **Status:** Sprint 1, tasks 1.1/1.2/1.6/1.7 complete. Next: task 1.3 (toast notifications)
+> **Status:** Sprint 1, tasks 1.1–1.4/1.6/1.7 complete. Next: task 1.5 (password reset via email)
 
 ---
 
@@ -136,30 +136,31 @@
 
 **Files:** all files listed above (comments only — no logic changes)
 
-### 1.3 Toast Notification System
+### 1.3 Toast Notification System ✅ DONE
 
-- [ ] Install `react-hot-toast` (or similar lightweight library)
-- [ ] Create a `<Toaster />` wrapper in App.tsx
-- [ ] Replace ALL `alert()` calls in frontend with toast:
-  - DocumentPage: delete success/error
-  - UploadPage: upload error
-  - EditDocumentPage: save error
-  - LoginPage: login error (keep inline for form context)
-  - Admin pages: all CRUD operations
-- [ ] Add success toasts for: upload complete, document updated, document deleted
-- [ ] Translations for all toast messages (en/de/es)
+- [x] Install `react-hot-toast`
+- [x] Create a `<Toaster />` in App.tsx (top-center, 3s duration)
+- [x] Replace ALL `alert()` calls with toast (DocumentPage, admin pages, ProfilePage)
+- [x] Add success toasts: upload, update, delete, password reset, CRUD operations
+- [x] Add info toast for clipboard copy (share fallback)
+- [x] Login errors kept inline (form context, not toast)
+- [x] Translations for all toast messages (en/de/es) — 12 keys each
 
-**Files:** `frontend/package.json`, `frontend/src/App.tsx`, all pages
+**Files:** `frontend/package.json`, `frontend/src/App.tsx`, DocumentPage, UploadPage, EditDocumentPage, ProfilePage, UsersPage, MetadataPage, AssetsPage, locale files
 
-### 1.4 User Account Page (self-service)
-- [ ] Backend: `PUT /api/users/me` — update own first_name, last_name, email
-- [ ] Backend: `PUT /api/users/me/password` — change own password (requires current password + password complexity validation)
-- [ ] Frontend: `AccountPage.tsx` — form with name, email, password change
-- [ ] Route: `/account` (protected, any user)
-- [ ] Add "Account" link in nav (next to logout)
-- [ ] Translations (en/de/es)
+### 1.4 User Account / Profile Page ✅ DONE
 
-**Files:** `server/routes/users.js`, new `frontend/src/pages/AccountPage.tsx`, `App.tsx`, `Layout.tsx`, locale files
+- [x] Backend: `PUT /api/users/me` — update own first_name, last_name, birth_date
+- [x] Backend: `PUT /api/users/me/password` — change own password (requires current password + complexity validation)
+- [x] Backend: CRUD for addresses, contacts, identity documents, key-value attributes
+- [x] Backend: `GET /api/users/:id/profile` — view family member profiles (read-only)
+- [x] Frontend: `ProfilePage.tsx` — full profile with 6 sections: basic info, password, addresses, contacts, identity docs, attributes
+- [x] Dual mode: own profile (editable) vs family member (read-only via `/family/:id`)
+- [x] Route: `/profile` (own) + `/family/:id` (view others)
+- [x] "Profile" link in nav
+- [x] Translations (en/de/es) — 50+ keys each
+
+**Files:** `server/routes/users.js`, `server/db/schema.sql` (3 new tables), new `frontend/src/pages/ProfilePage.tsx`, `App.tsx`, `Layout.tsx`, locale files
 
 ### 1.5 Password Reset via Email
 - [ ] Backend: `POST /auth/forgot-password` — generate reset token, send email

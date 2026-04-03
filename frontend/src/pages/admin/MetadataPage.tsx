@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { adminMetadata } from '../../services/api';
 
 // Consistent input class per style guide
@@ -72,6 +73,7 @@ export default function MetadataPage({ apiPath, fields, titleKey }: Props) {
         await api.update(editing.id as number, form);
       }
       cancelForm();
+      toast.success(creating ? t('toast.created') : t('toast.updated'));
       await load();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -83,10 +85,11 @@ export default function MetadataPage({ apiPath, fields, titleKey }: Props) {
     if (!confirm(t('admin.confirmDelete'))) return;
     try {
       await api.remove(item.id as number);
+      toast.success(t('toast.deleted'));
       await load();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      alert(msg || 'Failed');
+      toast.error(msg || 'Failed');
     }
   }
 

@@ -177,6 +177,20 @@
       "system": "System"
     }
   },
+  "toast": {
+    "documentUploaded": "Document uploaded successfully",
+    "documentUpdated": "Document updated successfully",
+    "documentDeleted": "Document deleted successfully",
+    "linkCopied": "Link copied to clipboard",
+    "copyFailed": "Could not copy link",
+    "userCreated": "User created successfully",
+    "userUpdated": "User updated successfully",
+    "userDeleted": "User deleted successfully",
+    "passwordReset": "Password reset successfully",
+    "created": "Created successfully",
+    "updated": "Updated successfully",
+    "deleted": "Deleted successfully"
+  },
   "invoice": {
     "title": "Invoice Details",
     "amount": "Amount",

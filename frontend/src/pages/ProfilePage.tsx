@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
@@ -27,13 +28,11 @@ export default function ProfilePage() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState('');
 
   // Basic info form
   const [basic, setBasic] = useState({ first_name: '', last_name: '', birth_date: '' });
   // Password form
   const [pw, setPw] = useState({ current_password: '', new_password: '', confirm: '' });
-  const [pwMsg, setPwMsg] = useState('');
 
   async function load() {
     const url = isOwnProfile ? '/api/users/me' : `/api/users/${viewingOtherId}/profile`;
@@ -47,20 +46,19 @@ export default function ProfilePage() {
 
   async function saveBasic() {
     await axios.put('/api/users/me', basic);
-    setMsg(t('profile.saved'));
+    toast.success(t('profile.saved'));
     await refresh();
-    setTimeout(() => setMsg(''), 3000);
   }
 
   async function changePassword() {
-    if (pw.new_password !== pw.confirm) { setPwMsg(t('profile.passwordMismatch')); return; }
+    if (pw.new_password !== pw.confirm) { toast.error(t('profile.passwordMismatch')); return; }
     try {
       await axios.put('/api/users/me/password', { current_password: pw.current_password, new_password: pw.new_password });
-      setPwMsg(t('profile.passwordChanged'));
+      toast.success(t('profile.passwordChanged'));
       setPw({ current_password: '', new_password: '', confirm: '' });
     } catch (err: unknown) {
       const m = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      setPwMsg(m || 'Failed');
+      toast.error(m || 'Failed');
     }
   }
 
@@ -140,7 +138,6 @@ export default function ProfilePage() {
       {/* Basic Info */}
       <div className="bg-white rounded-xl shadow-sm p-6 space-y-3">
         <h2 className="font-semibold text-sm text-gray-500 uppercase">{t('profile.basicInfo')}</h2>
-        {msg && <div className="bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm">{msg}</div>}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">{t('profile.firstName')}</label>
@@ -161,7 +158,6 @@ export default function ProfilePage() {
       {/* Password — only show on own profile */}
       {isOwnProfile && <div className="bg-white rounded-xl shadow-sm p-6 space-y-3">
         <h2 className="font-semibold text-sm text-gray-500 uppercase">{t('profile.changePassword')}</h2>
-        {pwMsg && <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm">{pwMsg}</div>}
         <div className="space-y-3">
           <input type="password" className={inputCls} placeholder={t('profile.currentPassword')} value={pw.current_password} onChange={e => setPw(p => ({ ...p, current_password: e.target.value }))} />
           <input type="password" className={inputCls} placeholder={t('profile.newPassword')} value={pw.new_password} onChange={e => setPw(p => ({ ...p, new_password: e.target.value }))} />

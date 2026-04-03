@@ -177,6 +177,20 @@
       "system": "Sistema"
     }
   },
+  "toast": {
+    "documentUploaded": "Documento subido exitosamente",
+    "documentUpdated": "Documento actualizado exitosamente",
+    "documentDeleted": "Documento eliminado exitosamente",
+    "linkCopied": "Enlace copiado al portapapeles",
+    "copyFailed": "No se pudo copiar el enlace",
+    "userCreated": "Usuario creado exitosamente",
+    "userUpdated": "Usuario actualizado exitosamente",
+    "userDeleted": "Usuario eliminado exitosamente",
+    "passwordReset": "Contrase\u00f1a restablecida exitosamente",
+    "created": "Creado exitosamente",
+    "updated": "Actualizado exitosamente",
+    "deleted": "Eliminado exitosamente"
+  },
   "invoice": {
     "title": "Detalles de factura",
     "amount": "Monto",

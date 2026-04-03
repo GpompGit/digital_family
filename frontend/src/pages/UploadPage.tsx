@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { uploadDocument, getCategories, getUsers, getInstitutions, getAssets } from '../services/api';
 import type { Category, User, Institution, Asset } from '../types';
 
@@ -79,9 +80,10 @@ export default function UploadPage() {
       }
 
       const result = await uploadDocument(formData);
+      toast.success(t('toast.documentUploaded'));
       navigate(`/documents/${result.uuid}`);
     } catch {
-      setError(t('upload.error'));
+      toast.error(t('upload.error'));
     } finally {
       setUploading(false);
     }

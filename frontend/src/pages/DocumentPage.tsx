@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { Document as PdfDocument, Page } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -33,9 +34,10 @@ export default function DocumentPage() {
     setDeleting(true);
     try {
       await deleteDocument(uuid);
+      toast.success(t('toast.documentDeleted'));
       navigate('/');
     } catch {
-      alert(t('document.deleteError'));
+      toast.error(t('document.deleteError'));
       setDeleting(false);
     }
   }
@@ -69,9 +71,9 @@ export default function DocumentPage() {
       // Fallback: copy URL to clipboard
       try {
         await navigator.clipboard.writeText(url);
-        alert(t('document.shareNotSupported'));
+        toast.success(t('toast.linkCopied'));
       } catch {
-        alert(t('document.shareNotSupported'));
+        toast.error(t('toast.copyFailed'));
       }
     }
   }, [doc, t]);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { getDocument, updateDocument, getCategories, getUsers, getInstitutions, getAssets } from '../services/api';
 import type { Category, User, Institution, Asset } from '../types';
 
@@ -58,9 +59,10 @@ export default function EditDocumentPage() {
     setError('');
     try {
       await updateDocument(uuid, data);
+      toast.success(t('toast.documentUpdated'));
       navigate(`/documents/${uuid}`);
     } catch {
-      setError(t('editDocument.error'));
+      toast.error(t('editDocument.error'));
     } finally {
       setSaving(false);
     }

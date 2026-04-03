@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { adminUsers, getUsers } from '../../services/api';
 import type { User } from '../../types';
 
@@ -52,6 +53,7 @@ export default function UsersPage() {
         await adminUsers.update(editing.id, form);
       }
       cancelForm();
+      toast.success(creating ? t('toast.userCreated') : t('toast.userUpdated'));
       await load();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -63,10 +65,11 @@ export default function UsersPage() {
     if (!confirm(t('admin.confirmDelete'))) return;
     try {
       await adminUsers.remove(user.id);
+      toast.success(t('toast.userDeleted'));
       await load();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      alert(msg || 'Failed');
+      toast.error(msg || 'Failed');
     }
   }
 
@@ -74,11 +77,12 @@ export default function UsersPage() {
     if (!resetId || newPassword.length < 8) return;
     try {
       await adminUsers.resetPassword(resetId, newPassword);
+      toast.success(t('toast.passwordReset'));
       setResetId(null);
       setNewPassword('');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      alert(msg || 'Failed');
+      toast.error(msg || 'Failed');
     }
   }
 

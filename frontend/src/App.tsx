@@ -34,6 +34,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
@@ -120,6 +121,7 @@ export default function App() {
   return (
     <ErrorBoundary>
     <BrowserRouter>
+      <Toaster position="top-center" toastOptions={{ duration: 3000, style: { fontSize: '14px' } }} />
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />

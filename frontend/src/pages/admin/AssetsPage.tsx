@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { adminAssets, getUsers } from '../../services/api';
 import type { Asset, User } from '../../types';
 
@@ -62,6 +63,7 @@ export default function AssetsPage() {
       if (creating) await adminAssets.create(body);
       else if (editing) await adminAssets.update(editing.id, body);
       cancelForm();
+      toast.success(creating ? t('toast.created') : t('toast.updated'));
       await load();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -73,10 +75,11 @@ export default function AssetsPage() {
     if (!confirm(t('admin.confirmDelete'))) return;
     try {
       await adminAssets.remove(asset.id);
+      toast.success(t('toast.deleted'));
       await load();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      alert(msg || 'Failed');
+      toast.error(msg || 'Failed');
     }
   }
 
