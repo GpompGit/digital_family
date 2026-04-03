@@ -81,11 +81,13 @@ export default function LoginPage() {
             <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
           )}
 
-          {/* Honeypot field — invisible to humans, bots auto-fill it */}
+          {/* Honeypot field — invisible to humans, bots auto-fill it.
+              Uses name="url_confirm" to avoid password managers filling "website" fields. */}
           <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }}>
-            <label htmlFor="website">Website</label>
+            <label htmlFor="url_confirm">Confirm URL</label>
             <input
-              id="website"
+              id="url_confirm"
+              name="url_confirm"
               type="text"
               tabIndex={-1}
               autoComplete="off"
