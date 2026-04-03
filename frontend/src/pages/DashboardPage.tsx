@@ -1,21 +1,33 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getDocuments, getCategories, getUsers } from '../services/api';
-import type { Document, Category, User, DocumentFilters } from '../types';
+import { useTranslation } from 'react-i18next';
+import { getDocuments, getCategories, getUsers, getInstitutions, getTags, getAssets } from '../services/api';
+import { SkeletonDocumentList } from '../components/Skeleton';
+import type { Document, Category, User, Institution, Tag, Asset, DocumentFilters } from '../types';
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
 
   const [filters, setFilters] = useState<DocumentFilters>({
     category: '',
-    person: '',
+    person: undefined,
+    institution: undefined,
+    asset: undefined,
+    tag: '',
     q: '',
+    from: '',
+    to: '',
     sort: 'date_desc'
   });
 
@@ -35,10 +47,15 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    Promise.all([getCategories(), getUsers()]).then(([cats, usrs]) => {
-      setCategories(cats);
-      setUsers(usrs);
-    });
+    Promise.all([getCategories(), getUsers(), getInstitutions(), getTags(), getAssets()]).then(
+      ([cats, usrs, insts, tgs, asts]) => {
+        setCategories(cats);
+        setUsers(usrs);
+        setInstitutions(insts);
+        setTags(tgs);
+        setAssets(asts);
+      }
+    );
   }, []);
 
   useEffect(() => {
@@ -46,8 +63,8 @@ export default function DashboardPage() {
   }, [filters]);
 
   function formatDate(dateStr: string | null) {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('de-CH');
+    if (!dateStr) return t('common.dash');
+    return new Date(dateStr).toLocaleDateString();
   }
 
   function formatSize(bytes: number) {
@@ -56,16 +73,17 @@ export default function DashboardPage() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  const personNames = users.map(u => `${u.first_name} ${u.last_name}`);
+  const hasActiveFilters = filters.institution || filters.asset || filters.tag || filters.from || filters.to;
 
   return (
     <div>
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+        {/* Row 1: search, category, person, sort */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <input
             type="search"
-            placeholder="Search..."
+            placeholder={t('dashboard.searchPlaceholder')}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={filters.q || ''}
             onChange={e => setFilters(f => ({ ...f, q: e.target.value }))}
@@ -75,19 +93,19 @@ export default function DashboardPage() {
             value={filters.category || ''}
             onChange={e => setFilters(f => ({ ...f, category: e.target.value }))}
           >
-            <option value="">All categories</option>
+            <option value="">{t('dashboard.allCategories')}</option>
             {categories.map(c => (
               <option key={c.id} value={c.slug}>{c.name}</option>
             ))}
           </select>
           <select
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={filters.person || ''}
-            onChange={e => setFilters(f => ({ ...f, person: e.target.value }))}
+            value={filters.person ?? ''}
+            onChange={e => setFilters(f => ({ ...f, person: e.target.value ? parseInt(e.target.value) : undefined }))}
           >
-            <option value="">All family members</option>
-            {personNames.map(name => (
-              <option key={name} value={name}>{name}</option>
+            <option value="">{t('dashboard.allMembers')}</option>
+            {users.map(u => (
+              <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>
             ))}
           </select>
           <select
@@ -95,26 +113,89 @@ export default function DashboardPage() {
             value={filters.sort || 'date_desc'}
             onChange={e => setFilters(f => ({ ...f, sort: e.target.value }))}
           >
-            <option value="date_desc">Newest first</option>
-            <option value="date_asc">Oldest first</option>
-            <option value="title_asc">Title A-Z</option>
-            <option value="created_desc">Recently added</option>
+            <option value="date_desc">{t('dashboard.sortNewest')}</option>
+            <option value="date_asc">{t('dashboard.sortOldest')}</option>
+            <option value="title_asc">{t('dashboard.sortTitle')}</option>
+            <option value="created_desc">{t('dashboard.sortRecent')}</option>
           </select>
         </div>
+
+        {/* Toggle more filters */}
+        <button
+          onClick={() => setShowMoreFilters(!showMoreFilters)}
+          className={`mt-2 text-xs ${hasActiveFilters ? 'text-blue-600 font-medium' : 'text-gray-400'} hover:text-blue-600`}
+        >
+          {showMoreFilters ? '- Less filters' : '+ More filters'}
+          {hasActiveFilters && !showMoreFilters && ' (active)'}
+        </button>
+
+        {/* Row 2: institution, asset, tag, date range */}
+        {showMoreFilters && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-100">
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={filters.institution ?? ''}
+              onChange={e => setFilters(f => ({ ...f, institution: e.target.value ? parseInt(e.target.value) : undefined }))}
+            >
+              <option value="">{t('dashboard.allInstitutions')}</option>
+              {institutions.map(i => (
+                <option key={i.id} value={i.id}>{i.name}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={filters.asset ?? ''}
+              onChange={e => setFilters(f => ({ ...f, asset: e.target.value ? parseInt(e.target.value) : undefined }))}
+            >
+              <option value="">{t('dashboard.allAssets')}</option>
+              {assets.map(a => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={filters.tag || ''}
+              onChange={e => setFilters(f => ({ ...f, tag: e.target.value }))}
+            >
+              <option value="">{t('dashboard.allTags')}</option>
+              {tags.map(tg => (
+                <option key={tg.id} value={tg.slug}>{tg.name}</option>
+              ))}
+            </select>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-400 shrink-0">{t('dashboard.dateFrom')}</label>
+              <input
+                type="date"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={filters.from || ''}
+                onChange={e => setFilters(f => ({ ...f, from: e.target.value }))}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-400 shrink-0">{t('dashboard.dateTo')}</label>
+              <input
+                type="date"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={filters.to || ''}
+                onChange={e => setFilters(f => ({ ...f, to: e.target.value }))}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Results count */}
       <div className="text-sm text-gray-500 mb-3">
-        {total} document{total !== 1 ? 's' : ''} found
+        {t('dashboard.documentsFound', { count: total })}
       </div>
 
       {/* Document list */}
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading...</div>
+        <SkeletonDocumentList count={5} />
       ) : documents.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-400 mb-4">No documents found</p>
-          <Link to="/upload" className="text-blue-600 hover:underline">Upload your first document</Link>
+          <p className="text-gray-400 mb-4">{t('dashboard.noDocuments')}</p>
+          <Link to="/upload" className="text-blue-600 hover:underline">{t('dashboard.uploadFirst')}</Link>
         </div>
       ) : (
         <div className="space-y-2">
@@ -131,10 +212,25 @@ export default function DashboardPage() {
                     <span className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
                       {doc.category_name}
                     </span>
-                    <span>{doc.person_name}</span>
-                    {doc.institution && <span>{doc.institution}</span>}
+                    <span>{doc.person_first_name} {doc.person_last_name}</span>
+                    {doc.institution_name && <span>{doc.institution_name}</span>}
+                    {doc.asset_name && (
+                      <span className="inline-flex items-center bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
+                        {doc.asset_name}
+                      </span>
+                    )}
                     <span>{formatDate(doc.document_date)}</span>
                     <span>{formatSize(doc.file_size)}</span>
+                    {doc.is_encrypted && (
+                      <span className="inline-flex items-center bg-gray-800 text-white px-2 py-0.5 rounded-full">
+                        {t('document.encrypted')}
+                      </span>
+                    )}
+                    {doc.is_private && (
+                      <span className="inline-flex items-center bg-red-50 text-red-700 px-2 py-0.5 rounded-full">
+                        {t('document.private')}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <span className="text-gray-300 text-lg shrink-0">&#8250;</span>
@@ -152,17 +248,17 @@ export default function DashboardPage() {
             onClick={() => loadDocuments(page - 1)}
             className="px-3 py-1 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-100"
           >
-            Previous
+            {t('dashboard.previous')}
           </button>
           <span className="px-3 py-1 text-sm text-gray-600">
-            {page} / {pages}
+            {t('dashboard.pageOf', { page, pages })}
           </span>
           <button
             disabled={page >= pages}
             onClick={() => loadDocuments(page + 1)}
             className="px-3 py-1 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-100"
           >
-            Next
+            {t('dashboard.next')}
           </button>
         </div>
       )}

@@ -1,12 +1,47 @@
+# =============================================================================
+# docker-compose.yml — Orchestrates all services (app, database, tunnel)
+# =============================================================================
+#
+# WHAT IS DOCKER COMPOSE?
+# Docker Compose lets you define and run MULTIPLE Docker containers together.
+# Instead of starting each container manually, you run:
+#   docker compose up -d
+# ...and all three services start in the right order.
+#
+# THREE SERVICES:
+#   1. app        — Node.js Express server (our application)
+#   2. db         — MariaDB database (stores all data)
+#   3. cloudflared — Cloudflare Tunnel (exposes the app to the internet via HTTPS)
+#
+# SERVICE DEPENDENCIES:
+#   app depends on db (waits until DB is healthy before starting)
+#   cloudflared depends on app (starts after the app is ready)
+#
+# ENVIRONMENT VARIABLES:
+#   ${VARIABLE} syntax reads values from the .env file in the same directory.
+#   This keeps secrets (passwords, tokens) out of the compose file.
+#
+# VOLUMES:
+#   - Named volume (db_data) — Docker-managed persistent storage for the database.
+#     Survives container restarts and rebuilds.
+#   - Bind mount (/volume1/digital_family/uploads) — maps a NAS folder into the container.
+#     Files uploaded through the app are stored here. Hyper Backup covers this folder.
+#   - Schema/seed mounts — MariaDB automatically runs SQL files in /docker-entrypoint-initdb.d/
+#     on FIRST startup only (when the database doesn't exist yet).
+# =============================================================================
+
 services:
+  # ---------------------------------------------------------------------------
+  # APP — The Node.js Express application
+  # ---------------------------------------------------------------------------
   app:
-    build: .
-    restart: unless-stopped
+    build: .                     # build from the Dockerfile in this directory
+    restart: unless-stopped      # auto-restart on crash (but not if manually stopped)
     ports:
-      - "3456:3456"
+      - "3456:3456"              # host:container — expose port 3456 on the NAS
     environment:
-      - NODE_ENV=production
-      - DB_HOST=db
+      - NODE_ENV=production      # tells Express to use production settings (secure cookies, etc.)
+      - DB_HOST=db               # "db" is the service name — Docker's internal DNS resolves it
       - DB_PORT=3306
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
@@ -18,41 +53,72 @@ services:
       - SMTP_PASS=${SMTP_PASS}
       - SMTP_FROM=${SMTP_FROM}
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
-      - UPLOAD_DIR=/app/uploads
+      - UPLOAD_DIR=/app/uploads  # path INSIDE the container (mapped to NAS below)
       - MAX_FILE_SIZE=${MAX_FILE_SIZE}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - PORT=3456
+      # Email ingestion (IMAP) — forward emails to ingest documents automatically
+      - IMAP_ENABLED=${IMAP_ENABLED:-false}
+      - IMAP_HOST=${IMAP_HOST}
+      - IMAP_PORT=${IMAP_PORT:-993}
+      - IMAP_USER=${IMAP_USER}
+      - IMAP_PASS=${IMAP_PASS}
+      - IMAP_POLL_INTERVAL=${IMAP_POLL_INTERVAL:-120000}
     volumes:
+      # Bind mount: NAS filesystem → container filesystem
+      # Files saved to /app/uploads inside the container actually go to
+      # /volume1/digital_family/uploads on the Synology NAS.
+      # This means uploaded PDFs are stored on the NAS (not inside Docker)
+      # and are covered by Hyper Backup.
       - /volume1/digital_family/uploads:/app/uploads
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_healthy  # don't start until MariaDB is ready
 
+  # ---------------------------------------------------------------------------
+  # DB — MariaDB 10 database
+  # ---------------------------------------------------------------------------
   db:
-    image: mariadb:10
+    image: mariadb:10            # use the official MariaDB 10 image from Docker Hub
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${DB_NAME}
-      - MYSQL_USER=${DB_USER}
-      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}  # root user password (for admin)
+      - MYSQL_DATABASE=${DB_NAME}                # auto-create this database on first start
+      - MYSQL_USER=${DB_USER}                    # auto-create this user
+      - MYSQL_PASSWORD=${DB_PASSWORD}            # with this password
     volumes:
+      # Named volume: Docker manages this storage location.
+      # Data persists across container restarts and rebuilds.
       - db_data:/var/lib/mysql
+      # Auto-initialization: MariaDB runs .sql files in this directory
+      # alphabetically on FIRST startup (when no database exists yet).
+      # 01-schema.sql creates the tables, 02-seed.sql inserts default data.
       - ./server/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - ./server/db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
     healthcheck:
+      # Docker checks if MariaDB is ready to accept connections.
+      # The "app" service waits for this before starting.
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 10s   # check every 10 seconds
+      timeout: 5s     # fail if check takes more than 5 seconds
+      retries: 5      # try 5 times before declaring unhealthy
 
+  # ---------------------------------------------------------------------------
+  # CLOUDFLARED — Cloudflare Tunnel (HTTPS without port forwarding)
+  # ---------------------------------------------------------------------------
+  # Instead of opening a port on the router (security risk), Cloudflare Tunnel
+  # creates an outbound connection from the NAS to Cloudflare's network.
+  # Cloudflare then serves the app at https://digitalfamily.carbonnull.ch
+  # with automatic HTTPS, DDoS protection, and WAF.
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    command: tunnel run
+    command: tunnel run          # start the tunnel
     environment:
-      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}  # authenticates with your Cloudflare account
     depends_on:
-      - app
+      - app                     # start after the app is running
 
+# Named volumes — Docker manages the actual storage location on disk
 volumes:
-  db_data:
+  db_data:                      # MariaDB data directory
