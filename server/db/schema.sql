@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) DEFAULT NULL UNIQUE, -- NULL for pets (can't log in)
   password_hash VARCHAR(255) DEFAULT NULL, -- bcrypt hash; NULL for pets
   first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) DEFAULT NULL,        -- NULL for pets (they only have a first name)
   role ENUM('admin','member') NOT NULL DEFAULT 'member', -- admin can manage settings
   can_login BOOLEAN NOT NULL DEFAULT FALSE, -- FALSE for pets, TRUE for human family members
   birth_date DATE DEFAULT NULL,            -- date of birth (humans and pets)

@@ -103,15 +103,15 @@ export default function UsersPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">{t('admin.userForm.firstName')} *</label>
-              <input className={inputCls} value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} />
+              <input className={inputCls} value={form.first_name} placeholder={form.can_login ? '' : 'e.g. Whiskers'} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">{t('admin.userForm.lastName')} *</label>
-              <input className={inputCls} value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} />
+              <label className="block text-xs text-gray-500 mb-1">{t('admin.userForm.lastName')} {form.can_login && '*'}</label>
+              <input className={inputCls} value={form.last_name} placeholder={form.can_login ? '' : '(optional for pets)'} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">{t('admin.userForm.email')}</label>
-              <input type="email" className={inputCls} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              <input type="text" className={inputCls} value={form.email} placeholder="(optional for pets)" onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
             </div>
             {creating && (
               <div>

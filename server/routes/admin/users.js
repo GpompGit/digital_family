@@ -24,12 +24,16 @@ router.post('/', requireAdmin, async (req, res) => {
   try {
     const { email, password, first_name, last_name, role, can_login } = req.body;
 
-    if (!first_name || !last_name) {
-      return res.status(400).json({ error: 'first_name and last_name are required' });
+    if (!first_name) {
+      return res.status(400).json({ error: 'Name is required' });
     }
 
     if (can_login && (!email || !password)) {
       return res.status(400).json({ error: 'Email and password are required for login-enabled users' });
+    }
+
+    if (can_login && !last_name) {
+      return res.status(400).json({ error: 'Last name is required for login-enabled users' });
     }
 
     let passwordHash = null;
@@ -64,8 +68,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { email, first_name, last_name, role, can_login } = req.body;
 
-    if (!first_name || !last_name) {
-      return res.status(400).json({ error: 'first_name and last_name are required' });
+    if (!first_name) {
+      return res.status(400).json({ error: 'Name is required' });
     }
 
     const [result] = await pool.query(
