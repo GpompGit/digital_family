@@ -64,6 +64,18 @@ export async function logout(): Promise<void> {
   await api.post('/auth/logout');
 }
 
+// Request a password reset email
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  const { data } = await api.post('/auth/forgot-password', { email });
+  return data;
+}
+
+// Reset password using a token from the email link
+export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
+  const { data } = await api.post('/auth/reset-password', { token, password });
+  return data;
+}
+
 // =============================================================================
 // LOOKUP DATA — Used for dropdowns and filters in the UI
 // =============================================================================

@@ -27,7 +27,38 @@
     "submit": "Anmelden",
     "submitting": "Anmeldung l\u00e4uft...",
     "error": "Ung\u00fcltige E-Mail oder Passwort. Bitte versuchen Sie es erneut.",
-    "lockedOut": "Konto vor\u00fcbergehend gesperrt wegen zu vieler Fehlversuche. Versuchen Sie es in 15 Minuten erneut."
+    "lockedOut": "Konto vor\u00fcbergehend gesperrt wegen zu vieler Fehlversuche. Versuchen Sie es in 15 Minuten erneut.",
+    "forgotPassword": "Passwort vergessen?"
+  },
+  "forgotPassword": {
+    "title": "Passwort zur\u00fccksetzen",
+    "subtitle": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link",
+    "submit": "Link senden",
+    "submitting": "Wird gesendet...",
+    "sent": "Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zur\u00fccksetzen gesendet. Pr\u00fcfen Sie Ihren Posteingang.",
+    "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "rateLimited": "Zu viele Anfragen. Bitte versuchen Sie es sp\u00e4ter erneut.",
+    "backToLogin": "Zur\u00fcck zur Anmeldung"
+  },
+  "resetPassword": {
+    "title": "Neues Passwort festlegen",
+    "subtitle": "W\u00e4hlen Sie ein neues Passwort f\u00fcr Ihr Konto",
+    "passwordLabel": "Neues Passwort",
+    "passwordPlaceholder": "Neues Passwort eingeben",
+    "confirmLabel": "Passwort best\u00e4tigen",
+    "confirmPlaceholder": "Neues Passwort erneut eingeben",
+    "confirmRequired": "Bitte best\u00e4tigen Sie Ihr Passwort",
+    "mismatch": "Passw\u00f6rter stimmen nicht \u00fcberein",
+    "minLength": "Passwort muss mindestens 8 Zeichen lang sein",
+    "complexity": "Passwort muss mindestens einen Buchstaben und eine Zahl enthalten",
+    "hint": "Mindestens 8 Zeichen, mindestens ein Buchstabe und eine Zahl",
+    "submit": "Passwort zur\u00fccksetzen",
+    "submitting": "Wird zur\u00fcckgesetzt...",
+    "success": "Ihr Passwort wurde erfolgreich zur\u00fcckgesetzt. Sie k\u00f6nnen sich jetzt mit Ihrem neuen Passwort anmelden.",
+    "error": "Passwort konnte nicht zur\u00fcckgesetzt werden. Bitte versuchen Sie es erneut.",
+    "invalidLink": "Dieser Link ist ung\u00fcltig oder fehlt. Bitte fordern Sie einen neuen an.",
+    "requestNew": "Neuen Link anfordern",
+    "goToLogin": "Zur Anmeldung"
   },
   "dashboard": {
     "searchPlaceholder": "Suchen...",

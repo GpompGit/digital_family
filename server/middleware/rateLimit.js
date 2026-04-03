@@ -63,6 +63,20 @@ export const adminLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Forgot password: 3 requests per hour per IP.
+// Stricter than login because password reset emails are expensive and
+// can be used for email enumeration (though we return the same response regardless).
+export const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3,
+  message: { error: 'Too many password reset requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+  }
+});
+
 // General API: 120 requests per minute per IP.
 // Covers all /api/* routes. Generous enough for normal browsing
 // (loading documents, filters, etc.) but stops automated scraping.

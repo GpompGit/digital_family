@@ -2,7 +2,7 @@
 
 > **Branch:** `claude/plan-database-schema-pe7Y7`
 > **Last updated:** 2026-04-03
-> **Status:** Sprint 1, tasks 1.1–1.4/1.6/1.7 complete. Next: task 1.5 (password reset via email)
+> **Status:** Sprint 1 complete. Next: Sprint 2 (notifications & smart dashboard)
 
 ---
 
@@ -162,17 +162,18 @@
 
 **Files:** `server/routes/users.js`, `server/db/schema.sql` (3 new tables), new `frontend/src/pages/ProfilePage.tsx`, `App.tsx`, `Layout.tsx`, locale files
 
-### 1.5 Password Reset via Email
-- [ ] Backend: `POST /auth/forgot-password` — generate reset token, send email
-- [ ] Backend: `POST /auth/reset-password` — verify token, set new password (with complexity rules)
-- [ ] Schema: add `password_reset_tokens` table (id, user_id, token CHAR(64) UNIQUE, used BOOLEAN, expires_at DATETIME, created_at DATETIME)
-- [ ] Frontend: "Forgot password?" link on login page
-- [ ] Frontend: `ResetPasswordPage.tsx` — enter new password after clicking email link
-- [ ] Rewrite `server/utils/email.js` — remove magic link, add password reset email template
-- [ ] Rate limit on forgot-password (3 per hour per email)
-- [ ] Translations (en/de/es)
+### 1.5 Password Reset via Email ✅ DONE
+- [x] Backend: `POST /auth/forgot-password` — generate reset token, send email
+- [x] Backend: `POST /auth/reset-password` — verify token, set new password (with complexity rules)
+- [x] Schema: add `password_reset_tokens` table (id, user_id, token CHAR(64) UNIQUE, used BOOLEAN, expires_at DATETIME, created_at DATETIME)
+- [x] Frontend: "Forgot password?" link on login page
+- [x] Frontend: `ForgotPasswordPage.tsx` — request reset email
+- [x] Frontend: `ResetPasswordPage.tsx` — enter new password after clicking email link
+- [x] `server/utils/email.js` — `sendPasswordResetEmail` template (already existed as placeholder, now wired up)
+- [x] Rate limit on forgot-password (3 per hour per IP via `forgotPasswordLimiter`)
+- [x] Translations (en/de/es) — 30+ new keys across forgotPassword and resetPassword namespaces
 
-**Files:** `server/db/schema.sql`, `server/routes/auth.js`, `server/utils/email.js`, new frontend pages, locale files
+**Files:** `server/db/schema.sql`, `server/routes/auth.js`, `server/middleware/rateLimit.js`, `server/utils/email.js`, new `frontend/src/pages/ForgotPasswordPage.tsx`, new `frontend/src/pages/ResetPasswordPage.tsx`, `frontend/src/App.tsx`, `frontend/src/pages/LoginPage.tsx`, `frontend/src/services/api.ts`, locale files
 
 ### 1.6 Error Boundaries ✅ DONE (commit `ad039a3`)
 - [ ] Create `ErrorBoundary.tsx` component (catches React render errors)
@@ -408,7 +409,7 @@
 | Admin user create audit logging | ✅ | admin/users.js |
 | File path traversal check | ✅ | documents.js (isSafeFilePath) |
 | Permissions-Policy header | ⬜ | Sprint 1.1 remaining |
-| Password reset with token | ⬜ | Sprint 1.4 |
+| Password reset with token | ✅ | auth.js (forgot-password + reset-password) |
 | Duplicate file detection | ⬜ | Sprint 6.2 |
 
 ---

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { login } from '../services/api';
 
 interface LoginForm {
@@ -92,10 +93,16 @@ export default function LoginPage() {
             />
           </div>
 
+          <div className="flex justify-end mt-2">
+            <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
+              {t('login.forgotPassword')}
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={submitting}
-            className="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
+            className="w-full mt-3 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
           >
             {submitting ? t('login.submitting') : t('login.submit')}
           </button>

@@ -122,6 +122,20 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- PASSWORD_RESET_TOKENS — One-time tokens for password reset via email.
+-- Flow: user requests reset → token generated → email sent → user clicks link → token verified → password changed.
+-- Tokens expire after 15 minutes and are single-use (used = TRUE after verification).
+-- We don't delete used/expired tokens immediately — a cleanup job handles that.
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  token CHAR(64) NOT NULL UNIQUE,           -- crypto.randomBytes(32).toString('hex')
+  used BOOLEAN NOT NULL DEFAULT FALSE,
+  expires_at DATETIME NOT NULL,             -- NOW() + 15 minutes
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ASSETS — Physical items owned by the family: cars, houses, boats, appliances, etc.
 -- Unlike users (people/pets), assets are THINGS that can have documents associated
 -- with them (insurance, maintenance, titles, drawings, receipts).

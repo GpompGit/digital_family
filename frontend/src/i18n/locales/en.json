@@ -27,7 +27,38 @@
     "submit": "Sign in",
     "submitting": "Signing in...",
     "error": "Invalid email or password. Please try again.",
-    "lockedOut": "Account temporarily locked due to too many failed attempts. Try again in 15 minutes."
+    "lockedOut": "Account temporarily locked due to too many failed attempts. Try again in 15 minutes.",
+    "forgotPassword": "Forgot password?"
+  },
+  "forgotPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your email and we'll send you a reset link",
+    "submit": "Send Reset Link",
+    "submitting": "Sending...",
+    "sent": "If an account with that email exists, a password reset link has been sent. Check your inbox.",
+    "error": "Something went wrong. Please try again.",
+    "rateLimited": "Too many requests. Please try again later.",
+    "backToLogin": "Back to login"
+  },
+  "resetPassword": {
+    "title": "Set New Password",
+    "subtitle": "Choose a new password for your account",
+    "passwordLabel": "New password",
+    "passwordPlaceholder": "Enter new password",
+    "confirmLabel": "Confirm password",
+    "confirmPlaceholder": "Re-enter new password",
+    "confirmRequired": "Please confirm your password",
+    "mismatch": "Passwords do not match",
+    "minLength": "Password must be at least 8 characters",
+    "complexity": "Password must contain at least one letter and one number",
+    "hint": "Minimum 8 characters, at least one letter and one number",
+    "submit": "Reset Password",
+    "submitting": "Resetting...",
+    "success": "Your password has been reset successfully. You can now log in with your new password.",
+    "error": "Failed to reset password. Please try again.",
+    "invalidLink": "This reset link is invalid or missing. Please request a new one.",
+    "requestNew": "Request a new reset link",
+    "goToLogin": "Go to login"
   },
   "dashboard": {
     "searchPlaceholder": "Search...",

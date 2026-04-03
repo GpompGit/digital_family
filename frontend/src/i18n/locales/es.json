@@ -27,7 +27,38 @@
     "submit": "Iniciar sesi\u00f3n",
     "submitting": "Iniciando sesi\u00f3n...",
     "error": "Correo o contrase\u00f1a inv\u00e1lidos. Int\u00e9ntelo de nuevo.",
-    "lockedOut": "Cuenta bloqueada temporalmente por demasiados intentos fallidos. Int\u00e9ntelo en 15 minutos."
+    "lockedOut": "Cuenta bloqueada temporalmente por demasiados intentos fallidos. Int\u00e9ntelo en 15 minutos.",
+    "forgotPassword": "\u00bfOlvid\u00f3 su contrase\u00f1a?"
+  },
+  "forgotPassword": {
+    "title": "Restablecer contrase\u00f1a",
+    "subtitle": "Ingrese su correo y le enviaremos un enlace de restablecimiento",
+    "submit": "Enviar enlace",
+    "submitting": "Enviando...",
+    "sent": "Si existe una cuenta con ese correo, se ha enviado un enlace de restablecimiento. Revise su bandeja de entrada.",
+    "error": "Algo sali\u00f3 mal. Int\u00e9ntelo de nuevo.",
+    "rateLimited": "Demasiadas solicitudes. Int\u00e9ntelo m\u00e1s tarde.",
+    "backToLogin": "Volver al inicio de sesi\u00f3n"
+  },
+  "resetPassword": {
+    "title": "Establecer nueva contrase\u00f1a",
+    "subtitle": "Elija una nueva contrase\u00f1a para su cuenta",
+    "passwordLabel": "Nueva contrase\u00f1a",
+    "passwordPlaceholder": "Ingrese nueva contrase\u00f1a",
+    "confirmLabel": "Confirmar contrase\u00f1a",
+    "confirmPlaceholder": "Reingrese nueva contrase\u00f1a",
+    "confirmRequired": "Confirme su contrase\u00f1a",
+    "mismatch": "Las contrase\u00f1as no coinciden",
+    "minLength": "La contrase\u00f1a debe tener al menos 8 caracteres",
+    "complexity": "La contrase\u00f1a debe contener al menos una letra y un n\u00famero",
+    "hint": "M\u00ednimo 8 caracteres, al menos una letra y un n\u00famero",
+    "submit": "Restablecer contrase\u00f1a",
+    "submitting": "Restableciendo...",
+    "success": "Su contrase\u00f1a se restableci\u00f3 exitosamente. Ahora puede iniciar sesi\u00f3n con su nueva contrase\u00f1a.",
+    "error": "No se pudo restablecer la contrase\u00f1a. Int\u00e9ntelo de nuevo.",
+    "invalidLink": "Este enlace es inv\u00e1lido o falta. Solicite uno nuevo.",
+    "requestNew": "Solicitar nuevo enlace",
+    "goToLogin": "Ir al inicio de sesi\u00f3n"
   },
   "dashboard": {
     "searchPlaceholder": "Buscar...",
