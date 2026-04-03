@@ -240,7 +240,16 @@
 
 **Files:** `frontend/src/pages/UploadPage.tsx`
 
-### 3.2 Multi-File Upload
+### 3.2 PDF Merge Upload (front + back)
+- [ ] Upload page allows selecting multiple PDFs for a single document (e.g., front and back of ID)
+- [ ] Server merges them into one PDF using `pdf-lib` (pure JS, Node 18 compatible — no native deps)
+- [ ] Merged PDF stored as a single document with all pages
+- [ ] Frontend: multi-file input with preview of selected files and page count
+- [ ] Order control: drag to reorder pages before merge
+
+**Files:** `frontend/src/pages/UploadPage.tsx`, `server/routes/documents.js`, new `server/utils/pdfMerge.js`, `package.json` (add `pdf-lib`)
+
+### 3.3 Multi-File Upload (batch)
 - [ ] Backend: accept multiple files in single request (multer `.array('files', 10)`)
 - [ ] OR: sequential uploads from frontend with shared metadata
 - [ ] Frontend: upload queue with individual progress bars
@@ -249,7 +258,7 @@
 
 **Files:** `server/routes/documents.js`, `server/utils/fileStorage.js`, `frontend/src/pages/UploadPage.tsx`
 
-### 3.3 Bulk Operations
+### 3.4 Bulk Operations
 - [ ] Add checkboxes to document list (multi-select mode)
 - [ ] Bulk actions bar: "Tag selected", "Delete selected", "Change category"
 - [ ] Backend: `POST /api/documents/bulk` — accepts array of UUIDs + action
@@ -257,7 +266,7 @@
 
 **Files:** `server/routes/documents.js`, `frontend/src/pages/DashboardPage.tsx`
 
-### 3.4 Upload Presets/Templates
+### 3.5 Upload Presets/Templates
 - [ ] New table: `upload_presets` (id, name, category_id, institution_id, tags JSON, user_id)
 - [ ] Admin or user can save a preset: "Vet visit" = category:vaccines + institution:vet-clinic + tag:pet
 - [ ] Dropdown on upload form: "Use preset..." → auto-fills fields
