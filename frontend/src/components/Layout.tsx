@@ -46,7 +46,9 @@ export default function Layout() {
                     {t('nav.settings')}
                   </Link>
                 )}
-                <span className="text-sm text-gray-600 hidden sm:inline">{user.first_name}</span>
+                <Link to="/profile" className="text-sm text-gray-600 hover:text-gray-900">
+                  {t('nav.profile')}
+                </Link>
                 <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-700">
                   {t('nav.logout')}
                 </button>

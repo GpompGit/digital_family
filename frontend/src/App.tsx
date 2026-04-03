@@ -42,6 +42,7 @@ import DashboardPage from './pages/DashboardPage';
 import UploadPage from './pages/UploadPage';
 import DocumentPage from './pages/DocumentPage';
 import EditDocumentPage from './pages/EditDocumentPage';
+import ProfilePage from './pages/ProfilePage';
 import SettingsLayout from './pages/admin/SettingsLayout';
 import UsersPage from './pages/admin/UsersPage';
 import MetadataPage from './pages/admin/MetadataPage';
@@ -127,6 +128,8 @@ export default function App() {
             <Route path="upload" element={<UploadPage />} />
             <Route path="documents/:uuid" element={<DocumentPage />} />
             <Route path="documents/:uuid/edit" element={<EditDocumentPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="family/:id" element={<ProfilePage />} />
           </Route>
           <Route element={<AdminRoute><Layout /></AdminRoute>}>
             <Route path="settings" element={<SettingsLayout />}>

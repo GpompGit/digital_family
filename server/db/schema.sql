@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS users (
   last_name VARCHAR(100) NOT NULL,
   role ENUM('admin','member') NOT NULL DEFAULT 'member', -- admin can manage settings
   can_login BOOLEAN NOT NULL DEFAULT FALSE, -- FALSE for pets, TRUE for human family members
+  birth_date DATE DEFAULT NULL,            -- date of birth (humans and pets)
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -159,6 +160,55 @@ CREATE TABLE IF NOT EXISTS user_attributes (
   attribute_name VARCHAR(100) NOT NULL,
   attribute_value VARCHAR(500) NOT NULL,
   UNIQUE KEY uq_user_attr (user_id, attribute_name),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- USER_ADDRESSES — Physical addresses with move-in/move-out history.
+-- A person can have multiple addresses (current + historical).
+-- year_in/year_out track when they lived/live there.
+-- year_out = NULL means they currently live there.
+CREATE TABLE IF NOT EXISTS user_addresses (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  label VARCHAR(50) NOT NULL DEFAULT 'home',       -- 'home', 'work', 'vacation', etc.
+  street VARCHAR(255) NOT NULL,
+  city VARCHAR(100) NOT NULL,
+  state VARCHAR(100) DEFAULT NULL,                  -- canton, province, state
+  zip VARCHAR(20) DEFAULT NULL,
+  country VARCHAR(100) NOT NULL DEFAULT 'Switzerland',
+  year_in SMALLINT UNSIGNED DEFAULT NULL,           -- year moved in (e.g., 2018)
+  year_out SMALLINT UNSIGNED DEFAULT NULL,          -- year moved out (NULL = current)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- USER_CONTACTS — Multiple email addresses and phone numbers per person.
+-- Each contact has a type (email/phone) and a label (personal/work/etc).
+CREATE TABLE IF NOT EXISTS user_contacts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  contact_type ENUM('email','phone','mobile') NOT NULL,
+  label VARCHAR(50) NOT NULL DEFAULT 'personal',   -- 'personal', 'work', 'emergency', etc.
+  value VARCHAR(255) NOT NULL,                      -- the email address or phone number
+  is_primary BOOLEAN NOT NULL DEFAULT FALSE,        -- one primary per type
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- USER_IDENTITY_DOCS — Passports, ID cards, driver licenses, etc.
+-- Each identity document has a number, validity dates, and issuing country.
+-- A person can have multiple (e.g., passport + ID card + driver license).
+CREATE TABLE IF NOT EXISTS user_identity_docs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  doc_type ENUM('passport','id_card','driver_license','residence_permit','other') NOT NULL,
+  doc_number VARCHAR(100) NOT NULL,
+  issuing_country VARCHAR(100) DEFAULT NULL,
+  issue_date DATE DEFAULT NULL,
+  expire_date DATE DEFAULT NULL,
+  notes TEXT DEFAULT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -347,6 +397,11 @@ CREATE INDEX idx_document_tags_tag ON document_tags(tag_id);
 -- Custom fields: support lookups by document and by field definition
 CREATE INDEX idx_custom_fields_document ON document_custom_fields(document_id);
 CREATE INDEX idx_custom_fields_field ON document_custom_fields(field_id);
+
+-- User personal data
+CREATE INDEX idx_user_addresses_user ON user_addresses(user_id);
+CREATE INDEX idx_user_contacts_user ON user_contacts(user_id);
+CREATE INDEX idx_user_identity_docs_user ON user_identity_docs(user_id);
 
 -- Matching rules: find active rules for a specific entity type
 CREATE INDEX idx_matching_rules_entity ON matching_rules(entity_type, entity_id);
