@@ -185,10 +185,14 @@ async function handleParsedEmail(imap, uid, parsed) {
     return;
   }
 
-  // Whitelist check: look up sender in users table
+  // Whitelist check: look up sender in users table OR user_contacts table.
+  // This allows family members to forward documents from any of their email
+  // addresses (work, personal, etc.), not just their login email.
   const [users] = await pool.query(
-    'SELECT id, email, first_name, last_name FROM users WHERE email = ? AND can_login = TRUE',
-    [senderAddress]
+    `SELECT u.id, u.email, u.first_name, u.last_name FROM users u
+     WHERE (u.email = ? AND u.can_login = TRUE)
+        OR u.id IN (SELECT uc.user_id FROM user_contacts uc WHERE uc.contact_type = 'email' AND uc.value = ?)`,
+    [senderAddress, senderAddress]
   );
 
   if (users.length === 0) {
