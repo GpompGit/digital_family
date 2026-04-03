@@ -36,10 +36,13 @@ WORKDIR /app/frontend
 # Docker caches each layer — if package.json hasn't changed, npm ci is skipped.
 # This makes rebuilds much faster when only source code changes.
 COPY frontend/package*.json ./
-RUN npm ci                          # "clean install" — exactly matches package-lock.json
+# "clean install" — exactly matches package-lock.json
+RUN npm ci
 
-COPY frontend/ ./                   # copy ALL frontend source files
-RUN npm run build                   # runs: tsc (TypeScript) + vite build → outputs to /dist
+# Copy ALL frontend source files
+COPY frontend/ ./
+# Compile TypeScript + bundle with Vite → outputs to /dist
+RUN npm run build
 
 # ---------------------------------------------------------------------------
 # Stage 2: Production server
