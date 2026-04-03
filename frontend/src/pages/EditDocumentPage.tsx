@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { getDocument, updateDocument, getCategories, getUsers, getInstitutions } from '../services/api';
-import type { Category, User, Institution } from '../types';
+import { getDocument, updateDocument, getCategories, getUsers, getInstitutions, getAssets } from '../services/api';
+import type { Category, User, Institution, Asset } from '../types';
 
 interface EditForm {
   title: string;
   person_id: string;
   category_id: string;
   institution_id: string;
+  asset_id: string;
   document_date: string;
   expires_at: string;
   notes: string;
@@ -23,22 +24,25 @@ export default function EditDocumentPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!uuid) return;
-    Promise.all([getDocument(uuid), getCategories(), getUsers(), getInstitutions()])
-      .then(([doc, cats, usrs, insts]) => {
+    Promise.all([getDocument(uuid), getCategories(), getUsers(), getInstitutions(), getAssets()])
+      .then(([doc, cats, usrs, insts, asts]) => {
         setCategories(cats);
         setUsers(usrs);
         setInstitutions(insts);
+        setAssets(asts);
         reset({
           title: doc.title,
           person_id: String(doc.person_id),
           category_id: String(doc.category_id),
           institution_id: doc.institution_id ? String(doc.institution_id) : '',
+          asset_id: doc.asset_id ? String(doc.asset_id) : '',
           document_date: doc.document_date ? doc.document_date.split('T')[0] : '',
           expires_at: doc.expires_at ? doc.expires_at.split('T')[0] : '',
           notes: doc.notes || ''
@@ -123,6 +127,20 @@ export default function EditDocumentPage() {
             <option value="">{t('common.select')}</option>
             {institutions.map(i => (
               <option key={i.id} value={i.id}>{i.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="asset_id" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.assetLabel')}</label>
+          <select
+            id="asset_id"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('asset_id')}
+          >
+            <option value="">{t('common.select')}</option>
+            {assets.map(a => (
+              <option key={a.id} value={a.id}>{a.name}</option>
             ))}
           </select>
         </div>

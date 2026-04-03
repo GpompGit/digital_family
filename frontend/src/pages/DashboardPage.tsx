@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getDocuments, getCategories, getUsers, getInstitutions, getTags } from '../services/api';
+import { getDocuments, getCategories, getUsers, getInstitutions, getTags, getAssets } from '../services/api';
 import { SkeletonDocumentList } from '../components/Skeleton';
-import type { Document, Category, User, Institution, Tag, DocumentFilters } from '../types';
+import type { Document, Category, User, Institution, Tag, Asset, DocumentFilters } from '../types';
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
@@ -22,6 +23,7 @@ export default function DashboardPage() {
     category: '',
     person: undefined,
     institution: undefined,
+    asset: undefined,
     tag: '',
     q: '',
     from: '',
@@ -45,12 +47,13 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    Promise.all([getCategories(), getUsers(), getInstitutions(), getTags()]).then(
-      ([cats, usrs, insts, tgs]) => {
+    Promise.all([getCategories(), getUsers(), getInstitutions(), getTags(), getAssets()]).then(
+      ([cats, usrs, insts, tgs, asts]) => {
         setCategories(cats);
         setUsers(usrs);
         setInstitutions(insts);
         setTags(tgs);
+        setAssets(asts);
       }
     );
   }, []);
@@ -70,7 +73,7 @@ export default function DashboardPage() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  const hasActiveFilters = filters.institution || filters.tag || filters.from || filters.to;
+  const hasActiveFilters = filters.institution || filters.asset || filters.tag || filters.from || filters.to;
 
   return (
     <div>
@@ -126,9 +129,9 @@ export default function DashboardPage() {
           {hasActiveFilters && !showMoreFilters && ' (active)'}
         </button>
 
-        {/* Row 2: institution, tag, date range */}
+        {/* Row 2: institution, asset, tag, date range */}
         {showMoreFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3 pt-3 border-t border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-100">
             <select
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={filters.institution ?? ''}
@@ -137,6 +140,16 @@ export default function DashboardPage() {
               <option value="">{t('dashboard.allInstitutions')}</option>
               {institutions.map(i => (
                 <option key={i.id} value={i.id}>{i.name}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={filters.asset ?? ''}
+              onChange={e => setFilters(f => ({ ...f, asset: e.target.value ? parseInt(e.target.value) : undefined }))}
+            >
+              <option value="">{t('dashboard.allAssets')}</option>
+              {assets.map(a => (
+                <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>
             <select
@@ -201,6 +214,11 @@ export default function DashboardPage() {
                     </span>
                     <span>{doc.person_first_name} {doc.person_last_name}</span>
                     {doc.institution_name && <span>{doc.institution_name}</span>}
+                    {doc.asset_name && (
+                      <span className="inline-flex items-center bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">
+                        {doc.asset_name}
+                      </span>
+                    )}
                     <span>{formatDate(doc.document_date)}</span>
                     <span>{formatSize(doc.file_size)}</span>
                   </div>

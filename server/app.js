@@ -28,8 +28,10 @@ import categoryRoutes from './routes/categories.js';
 import userRoutes from './routes/users.js';
 import institutionRoutes from './routes/institutions.js';
 import tagRoutes from './routes/tags.js';
+import assetRoutes from './routes/assets.js';
 import deployRoutes from './routes/deploy.js';
 import adminUserRoutes from './routes/admin/users.js';
+import adminAssetRoutes from './routes/admin/assets.js';
 import adminMetadataRoutes from './routes/admin/metadata.js';
 import adminAuditRoutes from './routes/admin/audit.js';
 
@@ -168,7 +170,9 @@ app.use('/api/categories', categoryRoutes);    // list categories (for dropdowns
 app.use('/api/users', userRoutes);             // current user profile + list all users
 app.use('/api/institutions', institutionRoutes); // list institutions (for dropdowns)
 app.use('/api/tags', tagRoutes);               // list tags (for filter dropdowns)
+app.use('/api/assets', assetRoutes);           // list assets (for filter dropdowns)
 app.use('/api/admin/users', adminUserRoutes);  // admin: manage users, reset passwords
+app.use('/api/admin/assets', adminAssetRoutes); // admin: manage assets + user attributes
 app.use('/api/admin', adminMetadataRoutes);    // admin: manage categories, institutions, tags, custom fields
 app.use('/api/admin/audit', adminAuditRoutes); // admin: view audit log
 app.use('/deploy', deployRoutes);              // GitHub webhook for auto-deploy

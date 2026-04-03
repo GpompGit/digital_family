@@ -32,6 +32,7 @@
     "allMembers": "Todos los miembros",
     "allInstitutions": "Todas las instituciones",
     "allTags": "Todas las etiquetas",
+    "allAssets": "Todos los activos",
     "dateFrom": "Desde",
     "dateTo": "Hasta",
     "sortNewest": "M\u00e1s recientes",
@@ -59,6 +60,7 @@
     "categoryRequired": "La categor\u00eda es obligatoria",
     "institutionLabel": "Instituci\u00f3n",
     "institutionPlaceholder": "p. ej. Hospital, Escuela, Empleador",
+    "assetLabel": "Activo (opcional)",
     "dateLabel": "Fecha del documento",
     "expiresLabel": "Fecha de vencimiento",
     "notesLabel": "Notas",
@@ -71,6 +73,7 @@
     "notFound": "Documento no encontrado",
     "person": "Persona",
     "institution": "Instituci\u00f3n",
+    "asset": "Activo",
     "documentDate": "Fecha del documento",
     "expiryDate": "Fecha de vencimiento",
     "file": "Archivo",
@@ -99,6 +102,7 @@
     "personLabel": "Miembro de la familia *",
     "categoryLabel": "Categor\u00eda *",
     "institutionLabel": "Instituci\u00f3n",
+    "assetLabel": "Activo (opcional)",
     "dateLabel": "Fecha del documento",
     "expiresLabel": "Fecha de vencimiento",
     "notesLabel": "Notas",
@@ -113,6 +117,7 @@
     "institutions": "Instituciones",
     "tags": "Etiquetas",
     "customFields": "Campos personalizados",
+    "assets": "Activos",
     "auditLog": "Registro de actividad",
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -155,6 +160,15 @@
       "filterFrom": "Desde",
       "filterTo": "Hasta",
       "system": "Sistema"
+    }
+  },
+  "assets": {
+    "types": {
+      "car": "Coche",
+      "house": "Casa",
+      "boat": "Barco",
+      "appliance": "Electrodom\u00e9stico",
+      "other": "Otro"
     }
   }
 }

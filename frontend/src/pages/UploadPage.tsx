@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { uploadDocument, getCategories, getUsers, getInstitutions } from '../services/api';
-import type { Category, User, Institution } from '../types';
+import { uploadDocument, getCategories, getUsers, getInstitutions, getAssets } from '../services/api';
+import type { Category, User, Institution, Asset } from '../types';
 
 interface UploadForm {
   title: string;
   person_id: string;
   category_id: string;
   institution_id: string;
+  asset_id: string;
   document_date: string;
   expires_at: string;
   notes: string;
@@ -22,15 +23,17 @@ export default function UploadPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([getCategories(), getUsers(), getInstitutions()]).then(([cats, usrs, insts]) => {
+    Promise.all([getCategories(), getUsers(), getInstitutions(), getAssets()]).then(([cats, usrs, insts, asts]) => {
       setCategories(cats);
       setUsers(usrs);
       setInstitutions(insts);
+      setAssets(asts);
     });
   }, []);
 
@@ -50,6 +53,7 @@ export default function UploadPage() {
       formData.append('person_id', data.person_id);
       formData.append('category_id', data.category_id);
       if (data.institution_id) formData.append('institution_id', data.institution_id);
+      if (data.asset_id) formData.append('asset_id', data.asset_id);
       if (data.document_date) formData.append('document_date', data.document_date);
       if (data.expires_at) formData.append('expires_at', data.expires_at);
       if (data.notes) formData.append('notes', data.notes);
@@ -139,6 +143,21 @@ export default function UploadPage() {
             <option value="">{t('common.select')}</option>
             {institutions.map(i => (
               <option key={i.id} value={i.id}>{i.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Asset (optional) */}
+        <div>
+          <label htmlFor="asset_id" className="block text-sm font-medium text-gray-700 mb-1">{t('upload.assetLabel')}</label>
+          <select
+            id="asset_id"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('asset_id')}
+          >
+            <option value="">{t('common.select')}</option>
+            {assets.map(a => (
+              <option key={a.id} value={a.id}>{a.name} ({t(`assets.types.${a.asset_type}`)})</option>
             ))}
           </select>
         </div>

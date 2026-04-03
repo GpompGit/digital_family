@@ -32,6 +32,7 @@
     "allMembers": "All family members",
     "allInstitutions": "All institutions",
     "allTags": "All tags",
+    "allAssets": "All assets",
     "dateFrom": "From",
     "dateTo": "To",
     "sortNewest": "Newest first",
@@ -59,6 +60,7 @@
     "categoryRequired": "Category is required",
     "institutionLabel": "Institution",
     "institutionPlaceholder": "e.g. Hospital, School, Employer",
+    "assetLabel": "Asset (optional)",
     "dateLabel": "Document date",
     "expiresLabel": "Expiry date",
     "notesLabel": "Notes",
@@ -71,6 +73,7 @@
     "notFound": "Document not found",
     "person": "Person",
     "institution": "Institution",
+    "asset": "Asset",
     "documentDate": "Document date",
     "expiryDate": "Expiry date",
     "file": "File",
@@ -99,6 +102,7 @@
     "personLabel": "Family member *",
     "categoryLabel": "Category *",
     "institutionLabel": "Institution",
+    "assetLabel": "Asset (optional)",
     "dateLabel": "Document date",
     "expiresLabel": "Expiry date",
     "notesLabel": "Notes",
@@ -113,6 +117,7 @@
     "institutions": "Institutions",
     "tags": "Tags",
     "customFields": "Custom Fields",
+    "assets": "Assets",
     "auditLog": "Audit Log",
     "save": "Save",
     "cancel": "Cancel",
@@ -155,6 +160,15 @@
       "filterFrom": "From",
       "filterTo": "To",
       "system": "System"
+    }
+  },
+  "assets": {
+    "types": {
+      "car": "Car",
+      "house": "House",
+      "boat": "Boat",
+      "appliance": "Appliance",
+      "other": "Other"
     }
   }
 }

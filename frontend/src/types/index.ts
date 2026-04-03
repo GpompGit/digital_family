@@ -65,6 +65,29 @@ export interface Tag {
 }
 
 
+// ---- Assets (cars, houses, boats, appliances) ----
+
+// A physical item owned by a family member
+export interface Asset {
+  id: number;
+  name: string;          // "Volvo XC60", "Apartment Zürich"
+  slug: string;
+  asset_type: 'car' | 'house' | 'boat' | 'appliance' | 'other';
+  owner_id: number;      // FK → users.id
+  owner_first_name?: string;  // JOINed
+  owner_last_name?: string;   // JOINed
+  notes: string | null;
+  attributes: Record<string, string>;  // key-value pairs: { brand: "Volvo", model: "XC60" }
+  created_at?: string;
+}
+
+// Key-value attribute for a user (person/pet)
+export interface UserAttribute {
+  id: number;
+  attribute_name: string;
+  attribute_value: string;
+}
+
 // ---- Documents ----
 
 // A single document with all its metadata.
@@ -84,6 +107,9 @@ export interface Document {
   category_slug: string;             // JOINed from categories table
   institution_id: number | null;     // null if no institution assigned
   institution_name: string | null;   // JOINed from institutions table
+  asset_id: number | null;          // null if no asset linked
+  asset_name: string | null;        // JOINed from assets table
+  asset_type: string | null;        // JOINed: 'car', 'house', etc.
   document_date: string | null;      // ISO date string or null
   file_size: number;                 // in bytes
   original_filename: string;         // the name the user uploaded (for download)
@@ -117,6 +143,7 @@ export interface DocumentFilters {
   category?: string;         // filter by category slug
   person?: number;           // filter by person_id (user ID)
   institution?: number;      // filter by institution_id
+  asset?: number;            // filter by asset_id
   tag?: string;              // filter by tag slug
   q?: string;                // full-text search query
   from?: string;             // document_date >= this date

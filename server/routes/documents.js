@@ -13,7 +13,7 @@ const router = Router();
 // GET /api/documents — list with filters
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { category, person, institution, tag, q, from, to, expiring_before, sort, page, limit } = req.query;
+    const { category, person, institution, asset, tag, q, from, to, expiring_before, sort, page, limit } = req.query;
 
     let sql = `
       SELECT d.id, d.uuid, d.person_id, d.title,
@@ -23,12 +23,14 @@ router.get('/', requireAuth, async (req, res) => {
              c.name AS category_name, c.slug AS category_slug,
              p.first_name AS person_first_name, p.last_name AS person_last_name,
              i.id AS institution_id, i.name AS institution_name,
+             a.id AS asset_id, a.name AS asset_name, a.asset_type,
              u.first_name AS uploaded_by_first, u.last_name AS uploaded_by_last
       FROM documents d
       JOIN categories c ON d.category_id = c.id
       JOIN users u ON d.user_id = u.id
       JOIN users p ON d.person_id = p.id
       LEFT JOIN institutions i ON d.institution_id = i.id
+      LEFT JOIN assets a ON d.asset_id = a.id
     `;
 
     const joins = [];
@@ -53,6 +55,11 @@ router.get('/', requireAuth, async (req, res) => {
     if (institution) {
       sql += ' AND d.institution_id = ?';
       params.push(parseInt(institution));
+    }
+
+    if (asset) {
+      sql += ' AND d.asset_id = ?';
+      params.push(parseInt(asset));
     }
 
     if (tag) {
@@ -136,12 +143,14 @@ router.get('/:uuid', requireAuth, async (req, res) => {
               c.name AS category_name, c.slug AS category_slug, c.id AS category_id,
               p.first_name AS person_first_name, p.last_name AS person_last_name,
               i.id AS institution_id, i.name AS institution_name,
+              a.id AS asset_id, a.name AS asset_name, a.asset_type,
               u.first_name AS uploaded_by_first, u.last_name AS uploaded_by_last
        FROM documents d
        JOIN categories c ON d.category_id = c.id
        JOIN users u ON d.user_id = u.id
        JOIN users p ON d.person_id = p.id
        LEFT JOIN institutions i ON d.institution_id = i.id
+       LEFT JOIN assets a ON d.asset_id = a.id
        WHERE d.uuid = ?`,
       [req.params.uuid]
     );
@@ -197,7 +206,7 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
       return res.status(400).json({ error: 'PDF file is required' });
     }
 
-    const { person_id, category_id, title, institution_id, document_date, notes, expires_at } = req.body;
+    const { person_id, category_id, title, institution_id, asset_id, document_date, notes, expires_at } = req.body;
 
     if (!person_id || !category_id || !title) {
       fs.unlinkSync(req.file.path);
@@ -243,9 +252,9 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
     fs.renameSync(req.file.path, absolutePath);
 
     await pool.query(
-      `INSERT INTO documents (uuid, user_id, person_id, category_id, title, institution_id, document_date, file_path, file_size, original_filename, notes, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [uuid, req.session.userId, person_id, category_id, title, institution_id || null, document_date || null, relativePath, req.file.size, req.file.originalname, notes || null, expires_at || null]
+      `INSERT INTO documents (uuid, user_id, person_id, category_id, title, institution_id, asset_id, document_date, file_path, file_size, original_filename, notes, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [uuid, req.session.userId, person_id, category_id, title, institution_id || null, asset_id || null, document_date || null, relativePath, req.file.size, req.file.originalname, notes || null, expires_at || null]
     );
 
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
@@ -265,7 +274,7 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
 // PUT /api/documents/:uuid — update metadata (renames file if path-relevant fields change)
 router.put('/:uuid', requireAuth, async (req, res) => {
   try {
-    const { person_id, category_id, title, institution_id, document_date, notes, expires_at } = req.body;
+    const { person_id, category_id, title, institution_id, asset_id, document_date, notes, expires_at } = req.body;
 
     // Fetch current document
     const [[doc]] = await pool.query(
@@ -320,10 +329,10 @@ router.put('/:uuid', requireAuth, async (req, res) => {
     }
 
     const [result] = await pool.query(
-      `UPDATE documents SET person_id = ?, category_id = ?, title = ?, institution_id = ?,
+      `UPDATE documents SET person_id = ?, category_id = ?, title = ?, institution_id = ?, asset_id = ?,
        document_date = ?, notes = ?, expires_at = ?, file_path = ?
        WHERE uuid = ?`,
-      [person_id, category_id, title, institution_id || null, document_date || null, notes || null, expires_at || null, relativePath, req.params.uuid]
+      [person_id, category_id, title, institution_id || null, asset_id || null, document_date || null, notes || null, expires_at || null, relativePath, req.params.uuid]
     );
 
     if (result.affectedRows === 0) {

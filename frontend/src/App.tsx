@@ -46,6 +46,7 @@ import SettingsLayout from './pages/admin/SettingsLayout';
 import UsersPage from './pages/admin/UsersPage';
 import MetadataPage from './pages/admin/MetadataPage';
 import AuditLogPage from './pages/admin/AuditLogPage';
+import AssetsPage from './pages/admin/AssetsPage';
 import type { ReactNode } from 'react';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -135,6 +136,7 @@ export default function App() {
               <Route path="institutions" element={<InstitutionsPage />} />
               <Route path="tags" element={<TagsPage />} />
               <Route path="custom-fields" element={<CustomFieldsPage />} />
+              <Route path="assets" element={<AssetsPage />} />
               <Route path="audit" element={<AuditLogPage />} />
             </Route>
           </Route>

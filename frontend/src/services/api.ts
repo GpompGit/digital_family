@@ -33,7 +33,7 @@
 // =============================================================================
 
 import axios from 'axios';
-import type { Category, Document, DocumentsResponse, DocumentFilters, User, Institution, Tag } from '../types';
+import type { Category, Document, DocumentsResponse, DocumentFilters, User, Institution, Tag, Asset } from '../types';
 
 // Create an axios instance with shared configuration.
 // All requests will use these defaults.
@@ -85,6 +85,11 @@ export async function getInstitutions(): Promise<Institution[]> {
 
 export async function getTags(): Promise<Tag[]> {
   const { data } = await api.get('/api/tags');
+  return data;
+}
+
+export async function getAssets(): Promise<Asset[]> {
+  const { data } = await api.get('/api/assets');
   return data;
 }
 

@@ -121,6 +121,47 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ASSETS — Physical items owned by the family: cars, houses, boats, appliances, etc.
+-- Unlike users (people/pets), assets are THINGS that can have documents associated
+-- with them (insurance, maintenance, titles, drawings, receipts).
+-- Every asset has an owner (a family member from the users table).
+-- A document can belong to BOTH a person AND an asset — e.g., car insurance
+-- belongs to the car (asset) AND the policyholder (person).
+CREATE TABLE IF NOT EXISTS assets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,                    -- "Volvo XC60", "Apartment Zürich", "Sailboat Luna"
+  slug VARCHAR(255) NOT NULL UNIQUE,             -- URL-safe: "volvo-xc60"
+  asset_type ENUM('car','house','boat','appliance','other') NOT NULL,
+  owner_id INT NOT NULL,                         -- FK → users.id (which family member owns this)
+  notes TEXT DEFAULT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ASSET_ATTRIBUTES — Flexible key-value attributes for assets.
+-- EAV pattern so any asset type can have any attributes without schema changes.
+-- Examples: car → brand:Volvo, model:XC60, year:2021, license_plate:ZH 123456
+--           house → address:Musterstr. 42, purchase_year:2018
+CREATE TABLE IF NOT EXISTS asset_attributes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  asset_id INT NOT NULL,
+  attribute_name VARCHAR(100) NOT NULL,
+  attribute_value VARCHAR(500) NOT NULL,
+  UNIQUE KEY uq_asset_attr (asset_id, attribute_name),
+  FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- USER_ATTRIBUTES — Flexible key-value attributes for persons and pets.
+-- People: date_of_birth, phone. Pets: date_of_birth, color, breed, microchip.
+CREATE TABLE IF NOT EXISTS user_attributes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  attribute_name VARCHAR(100) NOT NULL,
+  attribute_value VARCHAR(500) NOT NULL,
+  UNIQUE KEY uq_user_attr (user_id, attribute_name),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- ============================================================
 -- Group B: Tables depending on Group A
@@ -158,6 +199,7 @@ CREATE TABLE IF NOT EXISTS documents (
   person_id INT NOT NULL,                   -- FK: who this document belongs to
   category_id INT NOT NULL,                 -- FK: document type (insurance, vaccine, etc.)
   institution_id INT DEFAULT NULL,          -- FK: issuing institution (optional)
+  asset_id INT DEFAULT NULL,               -- FK: related asset (car, house, etc.) — optional
   title VARCHAR(255) NOT NULL,              -- user-provided title
   document_date DATE DEFAULT NULL,          -- the date ON the document
   file_path VARCHAR(500) NOT NULL,          -- relative path under uploads/
@@ -175,6 +217,7 @@ CREATE TABLE IF NOT EXISTS documents (
   FOREIGN KEY (person_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (category_id) REFERENCES categories(id),
   FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE SET NULL,
+  FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE SET NULL,
   FOREIGN KEY (parent_uuid) REFERENCES documents(uuid) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -281,6 +324,7 @@ CREATE INDEX idx_documents_user ON documents(user_id);
 CREATE INDEX idx_documents_person ON documents(person_id);
 CREATE INDEX idx_documents_date ON documents(document_date);
 CREATE INDEX idx_documents_institution ON documents(institution_id);
+CREATE INDEX idx_documents_asset ON documents(asset_id);
 CREATE INDEX idx_documents_expires ON documents(expires_at);
 CREATE INDEX idx_documents_parent_uuid ON documents(parent_uuid);
 -- Composite index: find latest version of a document efficiently

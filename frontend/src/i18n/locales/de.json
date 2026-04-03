@@ -32,6 +32,7 @@
     "allMembers": "Alle Familienmitglieder",
     "allInstitutions": "Alle Institutionen",
     "allTags": "Alle Schlagw\u00f6rter",
+    "allAssets": "Alle Objekte",
     "dateFrom": "Von",
     "dateTo": "Bis",
     "sortNewest": "Neueste zuerst",
@@ -59,6 +60,7 @@
     "categoryRequired": "Kategorie ist erforderlich",
     "institutionLabel": "Institution",
     "institutionPlaceholder": "z.B. Krankenhaus, Schule, Arbeitgeber",
+    "assetLabel": "Objekt (optional)",
     "dateLabel": "Dokumentendatum",
     "expiresLabel": "Ablaufdatum",
     "notesLabel": "Notizen",
@@ -71,6 +73,7 @@
     "notFound": "Dokument nicht gefunden",
     "person": "Person",
     "institution": "Institution",
+    "asset": "Objekt",
     "documentDate": "Dokumentendatum",
     "expiryDate": "Ablaufdatum",
     "file": "Datei",
@@ -99,6 +102,7 @@
     "personLabel": "Familienmitglied *",
     "categoryLabel": "Kategorie *",
     "institutionLabel": "Institution",
+    "assetLabel": "Objekt (optional)",
     "dateLabel": "Dokumentendatum",
     "expiresLabel": "Ablaufdatum",
     "notesLabel": "Notizen",
@@ -113,6 +117,7 @@
     "institutions": "Institutionen",
     "tags": "Schlagw\u00f6rter",
     "customFields": "Eigene Felder",
+    "assets": "Objekte",
     "auditLog": "Protokoll",
     "save": "Speichern",
     "cancel": "Abbrechen",
@@ -155,6 +160,15 @@
       "filterFrom": "Von",
       "filterTo": "Bis",
       "system": "System"
+    }
+  },
+  "assets": {
+    "types": {
+      "car": "Auto",
+      "house": "Haus",
+      "boat": "Boot",
+      "appliance": "Ger\u00e4t",
+      "other": "Andere"
     }
   }
 }

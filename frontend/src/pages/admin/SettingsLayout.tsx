@@ -7,6 +7,7 @@ const tabs = [
   { to: '/settings/institutions', key: 'admin.institutions' },
   { to: '/settings/tags', key: 'admin.tags' },
   { to: '/settings/custom-fields', key: 'admin.customFields' },
+  { to: '/settings/assets', key: 'admin.assets' },
   { to: '/settings/audit', key: 'admin.auditLog' },
 ];
 

@@ -41,6 +41,32 @@ INSERT IGNORE INTO institutions (name, slug) VALUES
   ('School District', 'school-district'),
   ('Employer Inc.', 'employer-inc');
 
+-- Example assets (update before deploying)
+INSERT IGNORE INTO assets (name, slug, asset_type, owner_id) VALUES
+  ('Family Car', 'family-car', 'car', 1),
+  ('Apartment', 'apartment', 'house', 1);
+
+-- Example asset attributes
+INSERT IGNORE INTO asset_attributes (asset_id, attribute_name, attribute_value) VALUES
+  (1, 'brand', 'Volvo'),
+  (1, 'model', 'XC60'),
+  (1, 'year', '2021'),
+  (1, 'license_plate', 'ZH 123456'),
+  (1, 'color', 'Black'),
+  (2, 'address', 'Musterstrasse 42, 8001 Zürich'),
+  (2, 'purchase_year', '2018');
+
+-- Example pet attributes (Whiskers)
+INSERT INTO user_attributes (user_id, attribute_name, attribute_value)
+SELECT u.id, 'date_of_birth', '2019-03-15' FROM users u WHERE u.first_name = 'Whiskers' AND u.last_name = 'Family'
+ON DUPLICATE KEY UPDATE attribute_value = VALUES(attribute_value);
+INSERT INTO user_attributes (user_id, attribute_name, attribute_value)
+SELECT u.id, 'color', 'Orange Tabby' FROM users u WHERE u.first_name = 'Whiskers' AND u.last_name = 'Family'
+ON DUPLICATE KEY UPDATE attribute_value = VALUES(attribute_value);
+INSERT INTO user_attributes (user_id, attribute_name, attribute_value)
+SELECT u.id, 'breed', 'European Shorthair' FROM users u WHERE u.first_name = 'Whiskers' AND u.last_name = 'Family'
+ON DUPLICATE KEY UPDATE attribute_value = VALUES(attribute_value);
+
 -- Default tags
 INSERT IGNORE INTO tags (name, slug, color) VALUES
   ('Urgent', 'urgent', '#EF4444'),

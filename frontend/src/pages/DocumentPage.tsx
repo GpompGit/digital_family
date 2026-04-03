@@ -133,6 +133,12 @@ export default function DocumentPage() {
               <dd className="font-medium">{doc.institution_name}</dd>
             </div>
           )}
+          {doc.asset_name && (
+            <div className="flex justify-between">
+              <dt className="text-gray-500">{t('document.asset')}</dt>
+              <dd className="font-medium">{doc.asset_name}</dd>
+            </div>
+          )}
           <div className="flex justify-between">
             <dt className="text-gray-500">{t('document.documentDate')}</dt>
             <dd className="font-medium">{formatDate(doc.document_date)}</dd>
