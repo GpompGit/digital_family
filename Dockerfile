@@ -31,7 +31,9 @@
 # ---------------------------------------------------------------------------
 # This stage compiles TypeScript to JavaScript, processes Tailwind CSS,
 # and bundles everything into optimized static files (HTML, JS, CSS) in /dist.
-FROM node:18-slim AS frontend-build
+# Stage 1 uses Node 20 because Tailwind CSS v4 (@tailwindcss/oxide) requires Node 20+.
+# This is safe because Stage 1 only runs during build, not at runtime on the NAS.
+FROM node:20-slim AS frontend-build
 WORKDIR /app/frontend
 
 # Copy package files first (before source code).
