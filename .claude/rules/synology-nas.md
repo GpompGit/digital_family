@@ -29,14 +29,16 @@
 
 ## Dockerfile Rules
 
-- **Never use `node:20-*` or newer** — use `node:18-slim`
-- **Never use `*-alpine` images** for the production stage
+- **Runtime stage (Stage 2) MUST use `node:18-slim`** — Node 20+ V8 requires SSE4.2
+- **Build stage (Stage 1) can use `node:20-slim`** — it only runs during `docker build`, not on the NAS CPU at runtime. This is needed because Tailwind CSS v4 (`@tailwindcss/oxide`) requires Node 20+ and has native bindings
+- **Never use `*-alpine` images** for any stage — musl binaries crash on Atom D2700
 - Never put comments on the same line as `RUN`, `COPY`, `FROM`, or other instructions
   - BAD: `RUN npm ci  # install dependencies`
   - GOOD: Comment on a separate line above the instruction
 - Use `npm ci --omit=dev` instead of deprecated `--production` flag
 - Multi-stage builds and `COPY --from=` are supported
 - Use `**/node_modules` in `.dockerignore` (not just `node_modules`) for recursive matching
+- When a frontend dependency requires Node 20+, keep it in Stage 1 only — never let it affect the runtime stage
 
 ## Task Scheduler (remote execution)
 
