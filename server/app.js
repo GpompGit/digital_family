@@ -202,8 +202,16 @@ app.use((err, req, res, next) => {
 });
 
 // Start the server and listen for incoming HTTP requests on the configured port.
+// After the server is running, start the email ingestion job (if enabled).
+// This polls an IMAP mailbox for forwarded emails with PDF attachments.
+import { startEmailIngestion } from './jobs/emailIngestion.js';
 app.listen(PORT, () => {
   console.log(`Digital Family running on port ${PORT}`);
+
+  // Start email ingestion if configured
+  if (process.env.IMAP_ENABLED === 'true') {
+    startEmailIngestion();
+  }
 });
 
 export default app;

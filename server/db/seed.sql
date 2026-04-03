@@ -11,7 +11,8 @@ INSERT IGNORE INTO categories (name, slug) VALUES
   ('ID Documents', 'id-documents'),
   ('Receipts', 'receipts'),
   ('Medical Records', 'medical-records'),
-  ('Certificates', 'certificates');
+  ('Certificates', 'certificates'),
+  ('Uncategorized', 'uncategorized');
 
 -- Family members (update emails and passwords before deploying)
 -- password_hash values are bcrypt placeholders — generate real hashes before first use

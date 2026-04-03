@@ -23,13 +23,17 @@
 | 11 | `6bbd344` | Beginner-friendly comments: frontend + infrastructure files |
 | 12 | `a1adc08` | Security: password complexity, idle timeout, CRUD audit, path traversal |
 | 13 | `ad039a3` | Error boundaries + loading skeleton screens |
+| 14 | (pending) | Email-to-document ingestion with IMAP, text extraction, auto-classification |
 
 ### Current File Inventory
 
 **Backend:**
-- `server/app.js` — Express app, all routes registered, CSP configured, rate limiters applied, input sanitization
+- `server/app.js` — Express app, all routes registered, CSP configured, rate limiters applied, input sanitization, email ingestion startup
 - `server/db/schema.sql` — 12 tables, all indexes, FULLTEXT search
-- `server/db/seed.sql` — categories, 4 humans + 2 cats, institutions, tags
+- `server/db/seed.sql` — categories (incl. Uncategorized), 4 humans + 2 cats, institutions, tags
+- `server/jobs/emailIngestion.js` — IMAP polling, email parsing, PDF extraction, auto-classification, document storage
+- `server/utils/pdfTextExtract.js` — PDF text layer extraction (pdf-parse)
+- `server/utils/textMatcher.js` — Matching rules engine (exact, any_word, all_words, regex, fuzzy)
 - `server/middleware/` — requireAuth, requireAdmin, rateLimit (login/upload/admin/api), sanitize (HTML strip)
 - `server/routes/auth.js` — email+password login with honeypot, account lockout, audit logging, logout
 - `server/routes/documents.js` — CRUD + file stream + owner-only delete + file rename on update
@@ -361,8 +365,9 @@
 
 ## Backlog (Future Sprints)
 
-- [ ] OCR pipeline (Tesseract.js or external service → populate `extracted_text`)
-- [ ] Auto-matching rules engine (use `matching_rules` table + `extracted_text`)
+- [x] ~~OCR pipeline~~ — PDF text extraction implemented via pdf-parse (text layer only; Tesseract for images is future)
+- [x] ~~Auto-matching rules engine~~ — textMatcher.js implements all 5 algorithms
+- [x] ~~Email-to-document ingestion~~ — IMAP polling, whitelist, auto-classify, confirmation email
 - [ ] Document linking (explicit relationships between docs)
 - [ ] Bulk import from Paperless-ngx
 - [ ] Weekly digest email
