@@ -93,7 +93,8 @@
     "shareNotSupported": "Teilen wird auf diesem Ger\u00e4t nicht unterst\u00fctzt",
     "deleteConfirm": "Dieses Dokument l\u00f6schen? Dies kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
     "deleteError": "Dokument konnte nicht gel\u00f6scht werden",
-    "deleteForbidden": "Nur der Hochladende oder ein Admin kann dieses Dokument l\u00f6schen"
+    "deleteForbidden": "Nur der Hochladende oder ein Admin kann dieses Dokument l\u00f6schen",
+    "previewUnavailable": "PDF-Vorschau nicht verf\u00fcgbar"
   },
   "editDocument": {
     "title": "Dokument bearbeiten",
@@ -132,6 +133,10 @@
     "dataType": "Datentyp",
     "action": "Aktion",
     "actions": "Aktionen",
+    "attributes": "Attribute",
+    "attributeKey": "Schl\u00fcssel (z.B. Marke)",
+    "attributeValue": "Wert (z.B. Volvo)",
+    "addAttribute": "Attribut hinzuf\u00fcgen",
     "userForm": {
       "email": "E-Mail",
       "firstName": "Vorname",
@@ -146,7 +151,8 @@
       "minChars": "Mindestens 8 Zeichen",
       "createUser": "Benutzer erstellen",
       "editUser": "Benutzer bearbeiten",
-      "cannotDeleteSelf": "Eigenes Konto kann nicht gel\u00f6scht werden"
+      "cannotDeleteSelf": "Eigenes Konto kann nicht gel\u00f6scht werden",
+      "owner": "Besitzer"
     },
     "audit": {
       "user": "Benutzer",
@@ -161,6 +167,12 @@
       "filterTo": "Bis",
       "system": "System"
     }
+  },
+  "error": {
+    "title": "Etwas ist schiefgelaufen",
+    "message": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie, die Seite neu zu laden.",
+    "refresh": "Seite neu laden",
+    "home": "Zur Startseite"
   },
   "assets": {
     "types": {

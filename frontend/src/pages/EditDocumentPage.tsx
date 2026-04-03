@@ -67,7 +67,21 @@ export default function EditDocumentPage() {
   }
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-400">{t('common.loading')}</div>;
+    return (
+      <div className="max-w-lg mx-auto space-y-4">
+        <div className="w-16 h-4 bg-gray-200 rounded animate-pulse" />
+        <div className="w-48 h-6 bg-gray-200 rounded animate-pulse" />
+        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i}>
+              <div className="w-24 h-3 bg-gray-200 rounded animate-pulse mb-2" />
+              <div className="w-full h-10 bg-gray-200 rounded animate-pulse" />
+            </div>
+          ))}
+          <div className="w-full h-10 bg-gray-200 rounded animate-pulse" />
+        </div>
+      </div>
+    );
   }
 
   return (

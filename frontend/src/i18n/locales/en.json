@@ -93,7 +93,8 @@
     "shareNotSupported": "Sharing is not supported on this device",
     "deleteConfirm": "Delete this document? This cannot be undone.",
     "deleteError": "Failed to delete document",
-    "deleteForbidden": "Only the uploader or an admin can delete this document"
+    "deleteForbidden": "Only the uploader or an admin can delete this document",
+    "previewUnavailable": "PDF preview unavailable"
   },
   "editDocument": {
     "title": "Edit Document",
@@ -132,6 +133,10 @@
     "dataType": "Data type",
     "action": "Action",
     "actions": "Actions",
+    "attributes": "Attributes",
+    "attributeKey": "Key (e.g. brand)",
+    "attributeValue": "Value (e.g. Volvo)",
+    "addAttribute": "Add attribute",
     "userForm": {
       "email": "Email",
       "firstName": "First name",
@@ -146,7 +151,8 @@
       "minChars": "Minimum 8 characters",
       "createUser": "Create User",
       "editUser": "Edit User",
-      "cannotDeleteSelf": "Cannot delete your own account"
+      "cannotDeleteSelf": "Cannot delete your own account",
+      "owner": "Owner"
     },
     "audit": {
       "user": "User",
@@ -161,6 +167,12 @@
       "filterTo": "To",
       "system": "System"
     }
+  },
+  "error": {
+    "title": "Something went wrong",
+    "message": "An unexpected error occurred. Please try refreshing the page.",
+    "refresh": "Refresh page",
+    "home": "Go to home"
   },
   "assets": {
     "types": {

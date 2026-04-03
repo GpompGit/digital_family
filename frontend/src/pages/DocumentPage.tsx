@@ -108,7 +108,7 @@ export default function DocumentPage() {
             <PdfDocument
               file={fileUrl}
               loading={<div className="w-[280px] h-[360px] flex items-center justify-center text-gray-400 text-sm">{t('common.loading')}</div>}
-              error={<div className="w-[280px] h-[100px] flex items-center justify-center text-gray-400 text-xs">PDF preview unavailable</div>}
+              error={<div className="w-[280px] h-[100px] flex items-center justify-center text-gray-400 text-xs">{t('document.previewUnavailable')}</div>}
             >
               <Page pageNumber={1} width={280} renderAnnotationLayer={false} renderTextLayer={false} />
             </PdfDocument>

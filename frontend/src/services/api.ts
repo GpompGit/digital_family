@@ -143,3 +143,60 @@ export async function deleteDocument(uuid: string): Promise<void> {
 export function getFileUrl(uuid: string): string {
   return `/api/documents/${uuid}/file`;
 }
+
+// =============================================================================
+// ADMIN — Functions for admin settings pages
+// =============================================================================
+
+// Generic admin CRUD helper — avoids repeating the same pattern for each entity
+async function adminGet<T>(path: string): Promise<T> {
+  const { data } = await api.get(path);
+  return data;
+}
+
+async function adminPost<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  const { data } = await api.post(path, body);
+  return data;
+}
+
+async function adminPut(path: string, body: Record<string, unknown>): Promise<void> {
+  await api.put(path, body);
+}
+
+async function adminDelete(path: string): Promise<void> {
+  await api.delete(path);
+}
+
+// Admin Users
+export const adminUsers = {
+  list: () => adminGet<User[]>('/api/admin/users'),
+  create: (body: Record<string, unknown>) => adminPost<{ id: number }>('/api/admin/users', body),
+  update: (id: number, body: Record<string, unknown>) => adminPut(`/api/admin/users/${id}`, body),
+  remove: (id: number) => adminDelete(`/api/admin/users/${id}`),
+  resetPassword: (id: number, password: string) => adminPut(`/api/admin/users/${id}/password`, { password }),
+};
+
+// Admin Assets
+export const adminAssets = {
+  list: () => adminGet<Asset[]>('/api/admin/assets'),
+  create: (body: Record<string, unknown>) => adminPost<{ id: number }>('/api/admin/assets', body),
+  update: (id: number, body: Record<string, unknown>) => adminPut(`/api/admin/assets/${id}`, body),
+  remove: (id: number) => adminDelete(`/api/admin/assets/${id}`),
+};
+
+// Admin Metadata (categories, institutions, tags, custom fields)
+export function adminMetadata(basePath: string) {
+  return {
+    list: () => adminGet<Record<string, unknown>[]>(basePath),
+    create: (body: Record<string, unknown>) => adminPost<{ id: number }>(basePath, body),
+    update: (id: number, body: Record<string, unknown>) => adminPut(`${basePath}/${id}`, body),
+    remove: (id: number) => adminDelete(`${basePath}/${id}`),
+  };
+}
+
+// Admin Audit Log
+export async function getAuditLog(params: URLSearchParams): Promise<{ entries: Record<string, unknown>[]; pagination: Record<string, number> }> {
+  const { data } = await api.get(`/api/admin/audit?${params}`);
+  return data;
+}
+

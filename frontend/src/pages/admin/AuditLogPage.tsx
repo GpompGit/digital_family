@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import { getAuditLog } from '../../services/api';
 import type { AuditLogEntry } from '../../types';
+
+// Consistent input class per style guide
+const inputCls = 'px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 export default function AuditLogPage() {
   const { t } = useTranslation();
@@ -20,8 +23,8 @@ export default function AuditLogPage() {
     if (filters.from) params.set('from', filters.from);
     if (filters.to) params.set('to', filters.to);
 
-    const { data } = await axios.get(`/api/admin/audit?${params}`);
-    setEntries(data.entries);
+    const data = await getAuditLog(params);
+    setEntries(data.entries as AuditLogEntry[]);
     setTotal(data.pagination.total);
     setPages(data.pagination.pages);
     setPage(data.pagination.page);
@@ -38,11 +41,7 @@ export default function AuditLogPage() {
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <select
-            className="px-3 py-2 border rounded-lg text-sm"
-            value={filters.action}
-            onChange={e => setFilters(f => ({ ...f, action: e.target.value }))}
-          >
+          <select className={inputCls} value={filters.action} onChange={e => setFilters(f => ({ ...f, action: e.target.value }))}>
             <option value="">{t('admin.audit.allActions')}</option>
             <option value="create">create</option>
             <option value="update">update</option>
@@ -51,32 +50,17 @@ export default function AuditLogPage() {
             <option value="logout">logout</option>
             <option value="download">download</option>
           </select>
-          <select
-            className="px-3 py-2 border rounded-lg text-sm"
-            value={filters.entity_type}
-            onChange={e => setFilters(f => ({ ...f, entity_type: e.target.value }))}
-          >
+          <select className={inputCls} value={filters.entity_type} onChange={e => setFilters(f => ({ ...f, entity_type: e.target.value }))}>
             <option value="">{t('admin.audit.allTypes')}</option>
             <option value="document">document</option>
             <option value="user">user</option>
             <option value="category">category</option>
             <option value="institution">institution</option>
             <option value="tag">tag</option>
+            <option value="asset">asset</option>
           </select>
-          <input
-            type="date"
-            className="px-3 py-2 border rounded-lg text-sm"
-            value={filters.from}
-            onChange={e => setFilters(f => ({ ...f, from: e.target.value }))}
-            placeholder={t('admin.audit.filterFrom')}
-          />
-          <input
-            type="date"
-            className="px-3 py-2 border rounded-lg text-sm"
-            value={filters.to}
-            onChange={e => setFilters(f => ({ ...f, to: e.target.value }))}
-            placeholder={t('admin.audit.filterTo')}
-          />
+          <input type="date" className={inputCls} value={filters.from} onChange={e => setFilters(f => ({ ...f, from: e.target.value }))} />
+          <input type="date" className={inputCls} value={filters.to} onChange={e => setFilters(f => ({ ...f, to: e.target.value }))} />
         </div>
       </div>
 
@@ -133,11 +117,11 @@ export default function AuditLogPage() {
       {/* Pagination */}
       {pages > 1 && (
         <div className="flex justify-center gap-2 mt-4">
-          <button disabled={page <= 1} onClick={() => load(page - 1)} className="px-3 py-1 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-100">
+          <button disabled={page <= 1} onClick={() => load(page - 1)} className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-30 hover:bg-gray-100">
             {t('dashboard.previous')}
           </button>
           <span className="px-3 py-1 text-sm text-gray-600">{page} / {pages}</span>
-          <button disabled={page >= pages} onClick={() => load(page + 1)} className="px-3 py-1 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-100">
+          <button disabled={page >= pages} onClick={() => load(page + 1)} className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-30 hover:bg-gray-100">
             {t('dashboard.next')}
           </button>
         </div>

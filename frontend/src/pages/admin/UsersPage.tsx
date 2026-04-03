@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import { adminUsers, getUsers } from '../../services/api';
 import type { User } from '../../types';
+
+// Consistent input class per style guide
+const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 export default function UsersPage() {
   const { t } = useTranslation();
@@ -14,7 +17,7 @@ export default function UsersPage() {
   const [error, setError] = useState('');
 
   async function load() {
-    const { data } = await axios.get('/api/admin/users');
+    const data = await adminUsers.list();
     setUsers(data);
   }
 
@@ -44,14 +47,14 @@ export default function UsersPage() {
     setError('');
     try {
       if (creating) {
-        await axios.post('/api/admin/users', form);
+        await adminUsers.create(form);
       } else if (editing) {
-        await axios.put(`/api/admin/users/${editing.id}`, form);
+        await adminUsers.update(editing.id, form);
       }
       cancelForm();
       await load();
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? err.response?.data?.error : 'Failed';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setError(msg || 'Failed');
     }
   }
@@ -59,10 +62,10 @@ export default function UsersPage() {
   async function handleDelete(user: User) {
     if (!confirm(t('admin.confirmDelete'))) return;
     try {
-      await axios.delete(`/api/admin/users/${user.id}`);
+      await adminUsers.remove(user.id);
       await load();
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? err.response?.data?.error : 'Failed';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       alert(msg || 'Failed');
     }
   }
@@ -70,11 +73,11 @@ export default function UsersPage() {
   async function handleResetPassword() {
     if (!resetId || newPassword.length < 8) return;
     try {
-      await axios.put(`/api/admin/users/${resetId}/password`, { password: newPassword });
+      await adminUsers.resetPassword(resetId, newPassword);
       setResetId(null);
       setNewPassword('');
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? err.response?.data?.error : 'Failed';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       alert(msg || 'Failed');
     }
   }
@@ -92,29 +95,29 @@ export default function UsersPage() {
       {showForm && (
         <div className="bg-white rounded-xl shadow-sm p-6 mb-4 space-y-3">
           <h2 className="font-semibold">{creating ? t('admin.userForm.createUser') : t('admin.userForm.editUser')}</h2>
-          {error && <div className="bg-red-50 text-red-700 px-3 py-2 rounded text-sm">{error}</div>}
+          {error && <div className="bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm mb-4">{error}</div>}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">{t('admin.userForm.firstName')} *</label>
-              <input className="w-full px-3 py-2 border rounded-lg text-sm" value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} />
+              <input className={inputCls} value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">{t('admin.userForm.lastName')} *</label>
-              <input className="w-full px-3 py-2 border rounded-lg text-sm" value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} />
+              <input className={inputCls} value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">{t('admin.userForm.email')}</label>
-              <input type="email" className="w-full px-3 py-2 border rounded-lg text-sm" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              <input type="email" className={inputCls} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
             </div>
             {creating && (
               <div>
                 <label className="block text-xs text-gray-500 mb-1">{t('admin.userForm.password')}</label>
-                <input type="password" className="w-full px-3 py-2 border rounded-lg text-sm" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+                <input type="password" className={inputCls} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
               </div>
             )}
             <div>
               <label className="block text-xs text-gray-500 mb-1">{t('admin.userForm.role')}</label>
-              <select className="w-full px-3 py-2 border rounded-lg text-sm" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value as 'admin' | 'member' }))}>
+              <select className={inputCls} value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value as 'admin' | 'member' }))}>
                 <option value="member">{t('admin.userForm.roleMember')}</option>
                 <option value="admin">{t('admin.userForm.roleAdmin')}</option>
               </select>
@@ -126,7 +129,7 @@ export default function UsersPage() {
           </div>
           <div className="flex gap-2 pt-2">
             <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">{t('admin.save')}</button>
-            <button onClick={cancelForm} className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50">{t('admin.cancel')}</button>
+            <button onClick={cancelForm} className="border border-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">{t('admin.cancel')}</button>
           </div>
         </div>
       )}
@@ -137,11 +140,11 @@ export default function UsersPage() {
           <h2 className="font-semibold">{t('admin.userForm.resetPassword')}</h2>
           <div>
             <label className="block text-xs text-gray-500 mb-1">{t('admin.userForm.newPassword')}</label>
-            <input type="password" className="w-full px-3 py-2 border rounded-lg text-sm" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={t('admin.userForm.minChars')} />
+            <input type="password" className={inputCls} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder={t('admin.userForm.minChars')} />
           </div>
           <div className="flex gap-2">
             <button onClick={handleResetPassword} disabled={newPassword.length < 8} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">{t('admin.save')}</button>
-            <button onClick={() => { setResetId(null); setNewPassword(''); }} className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50">{t('admin.cancel')}</button>
+            <button onClick={() => { setResetId(null); setNewPassword(''); }} className="border border-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">{t('admin.cancel')}</button>
           </div>
         </div>
       )}

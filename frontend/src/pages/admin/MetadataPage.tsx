@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import { adminMetadata } from '../../services/api';
+
+// Consistent input class per style guide
+const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 interface Field {
   key: string;
@@ -18,6 +21,7 @@ interface Props {
 
 export default function MetadataPage({ apiPath, fields, titleKey }: Props) {
   const { t } = useTranslation();
+  const api = adminMetadata(apiPath);
   const [items, setItems] = useState<Record<string, unknown>[]>([]);
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
   const [creating, setCreating] = useState(false);
@@ -25,7 +29,7 @@ export default function MetadataPage({ apiPath, fields, titleKey }: Props) {
   const [error, setError] = useState('');
 
   async function load() {
-    const { data } = await axios.get(apiPath);
+    const data = await api.list();
     setItems(data);
   }
 
@@ -63,14 +67,14 @@ export default function MetadataPage({ apiPath, fields, titleKey }: Props) {
     setError('');
     try {
       if (creating) {
-        await axios.post(apiPath, form);
+        await api.create(form);
       } else if (editing) {
-        await axios.put(`${apiPath}/${editing.id}`, form);
+        await api.update(editing.id as number, form);
       }
       cancelForm();
       await load();
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? err.response?.data?.error : 'Failed';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setError(msg || 'Failed');
     }
   }
@@ -78,10 +82,10 @@ export default function MetadataPage({ apiPath, fields, titleKey }: Props) {
   async function handleDelete(item: Record<string, unknown>) {
     if (!confirm(t('admin.confirmDelete'))) return;
     try {
-      await axios.delete(`${apiPath}/${item.id}`);
+      await api.remove(item.id as number);
       await load();
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? err.response?.data?.error : 'Failed';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       alert(msg || 'Failed');
     }
   }
@@ -99,7 +103,6 @@ export default function MetadataPage({ apiPath, fields, titleKey }: Props) {
   function handleFieldChange(key: string, value: string) {
     setForm(f => {
       const next = { ...f, [key]: value };
-      // Auto-generate slug when name changes
       if (key === 'name' && 'slug' in next) {
         next.slug = autoSlug(value);
       }
@@ -120,30 +123,30 @@ export default function MetadataPage({ apiPath, fields, titleKey }: Props) {
       {showForm && (
         <div className="bg-white rounded-xl shadow-sm p-6 mb-4 space-y-3">
           <h2 className="font-semibold">{creating ? t('admin.create') : t('admin.edit')}</h2>
-          {error && <div className="bg-red-50 text-red-700 px-3 py-2 rounded text-sm">{error}</div>}
+          {error && <div className="bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm mb-4">{error}</div>}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {fields.map(f => (
               <div key={f.key}>
                 <label className="block text-xs text-gray-500 mb-1">{f.label}{f.required !== false ? ' *' : ''}</label>
                 {f.type === 'color' ? (
                   <div className="flex gap-2 items-center">
-                    <input type="color" className="h-9 w-12 rounded border cursor-pointer" value={form[f.key] || '#6B7280'} onChange={e => handleFieldChange(f.key, e.target.value)} />
-                    <input type="text" className="flex-1 px-3 py-2 border rounded-lg text-sm" value={form[f.key] || ''} onChange={e => handleFieldChange(f.key, e.target.value)} />
+                    <input type="color" className="h-9 w-12 rounded border border-gray-300 cursor-pointer" value={form[f.key] || '#6B7280'} onChange={e => handleFieldChange(f.key, e.target.value)} />
+                    <input type="text" className={inputCls} value={form[f.key] || ''} onChange={e => handleFieldChange(f.key, e.target.value)} />
                   </div>
                 ) : f.type === 'select' ? (
-                  <select className="w-full px-3 py-2 border rounded-lg text-sm" value={form[f.key] || ''} onChange={e => handleFieldChange(f.key, e.target.value)}>
+                  <select className={inputCls} value={form[f.key] || ''} onChange={e => handleFieldChange(f.key, e.target.value)}>
                     <option value="">{t('common.select')}</option>
                     {f.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 ) : (
-                  <input type="text" className="w-full px-3 py-2 border rounded-lg text-sm" value={form[f.key] || ''} onChange={e => handleFieldChange(f.key, e.target.value)} />
+                  <input type="text" className={inputCls} value={form[f.key] || ''} onChange={e => handleFieldChange(f.key, e.target.value)} />
                 )}
               </div>
             ))}
           </div>
           <div className="flex gap-2 pt-2">
             <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">{t('admin.save')}</button>
-            <button onClick={cancelForm} className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50">{t('admin.cancel')}</button>
+            <button onClick={cancelForm} className="border border-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">{t('admin.cancel')}</button>
           </div>
         </div>
       )}

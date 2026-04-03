@@ -93,7 +93,8 @@
     "shareNotSupported": "Compartir no est\u00e1 disponible en este dispositivo",
     "deleteConfirm": "\u00bfEliminar este documento? Esta acci\u00f3n no se puede deshacer.",
     "deleteError": "No se pudo eliminar el documento",
-    "deleteForbidden": "Solo quien subi\u00f3 el documento o un admin puede eliminarlo"
+    "deleteForbidden": "Solo quien subi\u00f3 el documento o un admin puede eliminarlo",
+    "previewUnavailable": "Vista previa no disponible"
   },
   "editDocument": {
     "title": "Editar documento",
@@ -132,6 +133,10 @@
     "dataType": "Tipo de dato",
     "action": "Acci\u00f3n",
     "actions": "Acciones",
+    "attributes": "Atributos",
+    "attributeKey": "Clave (ej. marca)",
+    "attributeValue": "Valor (ej. Volvo)",
+    "addAttribute": "A\u00f1adir atributo",
     "userForm": {
       "email": "Correo electr\u00f3nico",
       "firstName": "Nombre",
@@ -146,7 +151,8 @@
       "minChars": "M\u00ednimo 8 caracteres",
       "createUser": "Crear usuario",
       "editUser": "Editar usuario",
-      "cannotDeleteSelf": "No puede eliminar su propia cuenta"
+      "cannotDeleteSelf": "No puede eliminar su propia cuenta",
+      "owner": "Propietario"
     },
     "audit": {
       "user": "Usuario",
@@ -161,6 +167,12 @@
       "filterTo": "Hasta",
       "system": "Sistema"
     }
+  },
+  "error": {
+    "title": "Algo sali\u00f3 mal",
+    "message": "Ocurri\u00f3 un error inesperado. Intente recargar la p\u00e1gina.",
+    "refresh": "Recargar p\u00e1gina",
+    "home": "Ir al inicio"
   },
   "assets": {
     "types": {
