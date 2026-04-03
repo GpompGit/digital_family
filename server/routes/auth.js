@@ -157,8 +157,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     // bcrypt.compare() takes the plain-text password and the stored hash,
     // hashes the plain-text password with the same salt, and compares.
     // This is deliberately SLOW (~100ms) to make brute-force attacks expensive.
-    // We use dynamic import because bcrypt is a native module.
-    const bcrypt = await import('bcrypt');
+    const bcrypt = await import('bcryptjs');
     const valid = await bcrypt.default.compare(password, user.password_hash);
 
     if (!valid) {
@@ -370,7 +369,7 @@ router.post('/reset-password', async (req, res) => {
     }
 
     // Hash the new password
-    const bcrypt = await import('bcrypt');
+    const bcrypt = await import('bcryptjs');
     const hash = await bcrypt.default.hash(password, 10);
 
     // Update password and mark token as used in a transaction

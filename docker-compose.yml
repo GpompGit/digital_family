@@ -30,6 +30,8 @@
 #     on FIRST startup only (when the database doesn't exist yet).
 # =============================================================================
 
+version: "2.4"
+
 services:
   # ---------------------------------------------------------------------------
   # APP — The Node.js Express application
@@ -79,7 +81,7 @@ services:
   # DB — MariaDB 10 database
   # ---------------------------------------------------------------------------
   db:
-    image: mariadb:10            # use the official MariaDB 10 image from Docker Hub
+    image: mariadb:10.11         # pinned version — healthcheck.sh requires 10.11+
     restart: unless-stopped
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}  # root user password (for admin)
@@ -102,6 +104,7 @@ services:
       interval: 10s   # check every 10 seconds
       timeout: 5s     # fail if check takes more than 5 seconds
       retries: 5      # try 5 times before declaring unhealthy
+      start_period: 60s  # give MariaDB time to initialize on slow Atom CPU
 
   # ---------------------------------------------------------------------------
   # CLOUDFLARED — Cloudflare Tunnel (HTTPS without port forwarding)

@@ -108,7 +108,7 @@ router.put('/me/password', requireAuth, async (req, res) => {
       'SELECT password_hash FROM users WHERE id = ?', [req.session.userId]
     );
 
-    const bcrypt = await import('bcrypt');
+    const bcrypt = await import('bcryptjs');
     const valid = await bcrypt.default.compare(current_password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Current password is incorrect' });
 

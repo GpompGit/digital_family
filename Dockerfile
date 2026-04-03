@@ -19,9 +19,11 @@
 # Think of it like cooking: Stage 1 is the kitchen (messy, lots of tools).
 # Stage 2 is the plate you serve (clean, only the finished dish).
 #
-# ALPINE LINUX:
-# We use "node:20-alpine" which is Node.js on Alpine Linux — a tiny Linux
-# distribution (~5MB vs ~100MB for Ubuntu). Smaller image = faster deploys.
+# NODE IMAGE:
+# We use "node:18-slim" (Debian-based, LTS) because:
+# - Alpine's musl binaries crash on the DS713+ Intel Atom D2700 ("Illegal instruction")
+# - Node.js 20's V8 engine requires SSE4.2 which the Atom D2700 lacks
+# - Node.js 18 is the last LTS version whose V8 works without SSE4.2
 # =============================================================================
 
 # ---------------------------------------------------------------------------
@@ -29,7 +31,7 @@
 # ---------------------------------------------------------------------------
 # This stage compiles TypeScript to JavaScript, processes Tailwind CSS,
 # and bundles everything into optimized static files (HTML, JS, CSS) in /dist.
-FROM node:20-alpine AS frontend-build
+FROM node:18-slim AS frontend-build
 WORKDIR /app/frontend
 
 # Copy package files first (before source code).
@@ -49,12 +51,12 @@ RUN npm run build
 # ---------------------------------------------------------------------------
 # This is the FINAL image that runs in production.
 # It contains only: Node.js, production npm packages, server code, and built frontend.
-FROM node:20-alpine
+FROM node:18-slim
 WORKDIR /app
 
 # Install ONLY production dependencies (no devDependencies like mocha, vitest, etc.)
 COPY package*.json ./
-RUN npm ci --production
+RUN npm ci --omit=dev
 
 # Copy the Express backend code
 COPY server/ ./server/

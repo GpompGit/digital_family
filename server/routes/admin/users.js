@@ -36,7 +36,7 @@ router.post('/', requireAdmin, async (req, res) => {
     if (password) {
       const passwordError = validatePassword(password);
       if (passwordError) return res.status(400).json({ error: passwordError });
-      const bcrypt = await import('bcrypt');
+      const bcrypt = await import('bcryptjs');
       passwordHash = await bcrypt.default.hash(password, 10);
     }
 
@@ -96,7 +96,7 @@ router.put('/:id/password', requireAdmin, async (req, res) => {
     const passwordError = validatePassword(password);
     if (passwordError) return res.status(400).json({ error: passwordError });
 
-    const bcrypt = await import('bcrypt');
+    const bcrypt = await import('bcryptjs');
     const passwordHash = await bcrypt.default.hash(password, 10);
 
     const [result] = await pool.query(
