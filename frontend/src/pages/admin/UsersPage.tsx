@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { adminUsers, getUsers } from '../../services/api';
+import { adminUsers } from '../../services/api';
 import type { User } from '../../types';
 
 // Consistent input class per style guide
@@ -14,7 +14,7 @@ export default function UsersPage() {
   const [creating, setCreating] = useState(false);
   const [resetId, setResetId] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState('');
-  const [form, setForm] = useState({ email: '', first_name: '', last_name: '', password: '', role: 'member' as const, can_login: false });
+  const [form, setForm] = useState<{ email: string; first_name: string; last_name: string; password: string; role: 'admin' | 'member'; can_login: boolean }>({ email: '', first_name: '', last_name: '', password: '', role: 'member', can_login: false });
   const [error, setError] = useState('');
 
   async function load() {

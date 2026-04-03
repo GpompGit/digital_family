@@ -58,7 +58,7 @@ export default function EditDocumentPage() {
     setSaving(true);
     setError('');
     try {
-      await updateDocument(uuid, data);
+      await updateDocument(uuid, data as unknown as Record<string, unknown>);
       toast.success(t('toast.documentUpdated'));
       navigate(`/documents/${uuid}`);
     } catch {

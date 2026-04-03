@@ -194,11 +194,11 @@ export default function DocumentPage() {
           <div className="mt-4 border-t border-gray-100 pt-4">
             <h3 className="text-sm font-medium text-gray-500 mb-2">{t('invoice.title')}</h3>
             <dl className="space-y-2">
-              {doc.custom_fields.map((cf: { field_slug: string; field_name: string; data_type: string; value_string: string | null; value_date: string | null; value_decimal: number | null; value_integer: number | null; value_boolean: boolean | null }) => {
+              {doc.custom_fields.map((cf) => {
                 let displayValue: string = '';
                 if (cf.data_type === 'monetary' && cf.value_decimal !== null) {
                   // Find currency field if present
-                  const currField = doc.custom_fields?.find((f: { field_slug: string; value_string: string | null }) => f.field_slug === 'currency');
+                  const currField = doc.custom_fields?.find((f) => f.field_slug === 'currency');
                   const curr = currField?.value_string || 'CHF';
                   displayValue = `${curr} ${cf.value_decimal.toFixed(2)}`;
                 } else if (cf.data_type === 'date' && cf.value_date) {

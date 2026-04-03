@@ -24,7 +24,7 @@ export default function AuditLogPage() {
     if (filters.to) params.set('to', filters.to);
 
     const data = await getAuditLog(params);
-    setEntries(data.entries as AuditLogEntry[]);
+    setEntries(data.entries as unknown as AuditLogEntry[]);
     setTotal(data.pagination.total);
     setPages(data.pagination.pages);
     setPage(data.pagination.page);

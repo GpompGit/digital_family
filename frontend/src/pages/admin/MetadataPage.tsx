@@ -20,7 +20,7 @@ interface Props {
   titleKey: string;
 }
 
-export default function MetadataPage({ apiPath, fields, titleKey }: Props) {
+export default function MetadataPage({ apiPath, fields, titleKey: _titleKey }: Props) {
   const { t } = useTranslation();
   const api = adminMetadata(apiPath);
   const [items, setItems] = useState<Record<string, unknown>[]>([]);
