@@ -76,7 +76,7 @@ app.use(helmet({
       scriptSrc: ["'self'"],                     // only run our own JavaScript
       styleSrc: ["'self'", "'unsafe-inline'"],   // Tailwind CSS injects inline styles, so we must allow it
       imgSrc: ["'self'", "data:", "blob:"],      // PDF.js creates blob: URLs for canvas rendering
-      fontSrc: ["'self'"],                       // only load fonts from our domain
+      fontSrc: ["'self'", "data:"],               // allow data: URIs for bundled fonts
       connectSrc: ["'self'"],                    // AJAX/fetch requests only to our domain
       objectSrc: ["'none'"],                     // block Flash, Java applets, etc.
       frameSrc: ["'self'", "blob:"],             // PDF viewer opens blob: URLs in iframes
