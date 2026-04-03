@@ -1,34 +1,31 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { login } from '../services/api';
 
-interface LoginForm {
-  email: string;
-  password: string;
-  website: string; // honeypot — hidden from humans, filled by bots
-}
-
 export default function LoginPage() {
   const { t } = useTranslation();
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  async function onSubmit(data: LoginForm) {
-    // Honeypot check — if the hidden field has a value, silently reject
-    if (data.website) {
-      // Simulate a delay to not reveal the trap, then show generic error
-      await new Promise(r => setTimeout(r, 1500));
-      setError(t('login.error'));
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+
+    if (!email.trim()) {
+      setError(t('login.emailRequired'));
+      return;
+    }
+    if (!password) {
+      setError(t('login.passwordRequired'));
       return;
     }
 
     try {
       setError('');
       setSubmitting(true);
-      await login(data.email, data.password);
+      await login(email, password);
       window.location.href = '/';
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -50,7 +47,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(onSubmit)(e); }}>
+        <form onSubmit={onSubmit}>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             {t('login.emailLabel')}
           </label>
@@ -60,11 +57,9 @@ export default function LoginPage() {
             autoComplete="email"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder={t('login.emailPlaceholder')}
-            {...register('email', { required: t('login.emailRequired') })}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
-          {errors.email && (
-            <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
-          )}
 
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1 mt-4">
             {t('login.passwordLabel')}
@@ -75,23 +70,9 @@ export default function LoginPage() {
             autoComplete="current-password"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder={t('login.passwordPlaceholder')}
-            {...register('password', { required: t('login.passwordRequired') })}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
-          {errors.password && (
-            <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
-          )}
-
-          {/* Honeypot field — invisible to humans, bots auto-fill it. */}
-          <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, height: 0, overflow: 'hidden' }}>
-            <label htmlFor="url_confirm">Confirm URL</label>
-            <input
-              id="url_confirm"
-              type="text"
-              tabIndex={-1}
-              autoComplete="off"
-              {...register('website')}
-            />
-          </div>
 
           <div className="flex justify-end mt-2">
             <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
