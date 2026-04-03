@@ -10,14 +10,14 @@
 //   - Image-only scanned PDFs (no text layer) — returns null
 //   - For those, a full OCR engine (Tesseract.js) would be needed (future feature)
 //
-// pdf-parse uses Mozilla's PDF.js under the hood — same library that powers
-// the browser's built-in PDF viewer and our react-pdf thumbnails.
+// NOTE: pdf-parse v2 requires Node 20+ (bundled pdfjs-dist). On Node 18 (DS713+),
+// the import will fail. We catch this gracefully and return null — PDF text
+// extraction is optional and only used for email ingestion auto-classification.
 // =============================================================================
 
 import fs from 'fs';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse');
+
+let pdfParse = null;
 
 /**
  * Extract text content from a PDF file.
@@ -27,6 +27,21 @@ const pdfParse = require('pdf-parse');
  */
 export async function extractTextFromPdf(filePath) {
   try {
+    // Lazy-load pdf-parse to avoid crashing the app on Node 18
+    if (pdfParse === null) {
+      try {
+        const { createRequire } = await import('module');
+        const require = createRequire(import.meta.url);
+        pdfParse = require('pdf-parse');
+      } catch {
+        console.warn('pdf-parse not available (requires Node 20+). PDF text extraction disabled.');
+        pdfParse = false;
+        return null;
+      }
+    }
+
+    if (pdfParse === false) return null;
+
     const dataBuffer = fs.readFileSync(filePath);
     const result = await pdfParse(dataBuffer);
 
