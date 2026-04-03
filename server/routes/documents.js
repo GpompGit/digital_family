@@ -402,10 +402,19 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
       [uuid, req.session.userId, person_id, category_id, dbTitle, institution_id || null, asset_id || null, document_date || null, relativePath, req.file.size, req.file.originalname, dbNotes, expires_at || null, wantEncrypted ? 1 : 0, encryptionIv, wantPrivate ? 1 : 0]
     );
 
+    // Get the document's database ID for tag and custom field inserts
+    const [[{ docId }]] = await pool.query('SELECT id AS docId FROM documents WHERE uuid = ?', [uuid]);
+
+    // Insert tags if provided (comma-separated tag IDs)
+    const tagIds = req.body.tag_ids ? JSON.parse(req.body.tag_ids) : [];
+    if (Array.isArray(tagIds) && tagIds.length > 0) {
+      const tagValues = tagIds.map(tid => [docId, parseInt(tid)]);
+      await pool.query('INSERT INTO document_tags (document_id, tag_id) VALUES ?', [tagValues]);
+    }
+
     // Insert custom fields if provided (invoice fields: amount, paid_date, etc.)
     const customFields = req.body.custom_fields ? JSON.parse(req.body.custom_fields) : null;
     if (customFields && typeof customFields === 'object') {
-      const [[{ docId }]] = await pool.query('SELECT id AS docId FROM documents WHERE uuid = ?', [uuid]);
       await insertCustomFields(docId, customFields, encryptionIv);
     }
 

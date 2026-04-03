@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { uploadDocument, getCategories, getUsers, getInstitutions, getAssets } from '../services/api';
-import type { Category, User, Institution, Asset } from '../types';
+import { uploadDocument, getCategories, getUsers, getInstitutions, getAssets, getTags } from '../services/api';
+import type { Category, User, Institution, Asset, Tag } from '../types';
 
 interface UploadForm {
   title: string;
@@ -27,6 +27,8 @@ export default function UploadPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -37,11 +39,12 @@ export default function UploadPage() {
   const isInvoice = categories.find(c => c.id === parseInt(selectedCategoryId))?.slug === 'invoices';
 
   useEffect(() => {
-    Promise.all([getCategories(), getUsers(), getInstitutions(), getAssets()]).then(([cats, usrs, insts, asts]) => {
+    Promise.all([getCategories(), getUsers(), getInstitutions(), getAssets(), getTags()]).then(([cats, usrs, insts, asts, tgs]) => {
       setCategories(cats);
       setUsers(usrs);
       setInstitutions(insts);
       setAssets(asts);
+      setTags(tgs);
     });
   }, []);
 
@@ -67,6 +70,7 @@ export default function UploadPage() {
       if (data.notes) formData.append('notes', data.notes);
       if (data.is_encrypted) formData.append('is_encrypted', 'true');
       if (data.is_private) formData.append('is_private', 'true');
+      if (selectedTags.length > 0) formData.append('tag_ids', JSON.stringify(selectedTags));
 
       // Append invoice custom fields if category is Invoices
       if (isInvoice) {
@@ -183,6 +187,26 @@ export default function UploadPage() {
             ))}
           </select>
         </div>
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('document.tags')}</label>
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => setSelectedTags(prev => prev.includes(tag.id) ? prev.filter(id => id !== tag.id) : [...prev, tag.id])}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${selectedTags.includes(tag.id) ? 'text-white border-transparent' : 'text-gray-600 border-gray-300 bg-white hover:bg-gray-50'}`}
+                  style={selectedTags.includes(tag.id) ? { backgroundColor: tag.color } : undefined}
+                >
+                  {tag.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Document Date */}
         <div>
