@@ -10,6 +10,7 @@ INSERT IGNORE INTO categories (name, slug) VALUES
   ('Insurance', 'insurance'),
   ('ID Documents', 'id-documents'),
   ('Receipts', 'receipts'),
+  ('Invoices', 'invoices'),
   ('Medical Records', 'medical-records'),
   ('Certificates', 'certificates'),
   ('Uncategorized', 'uncategorized');
@@ -21,6 +22,11 @@ INSERT IGNORE INTO users (email, password_hash, first_name, last_name, role, can
   ('member2@example.com', '$2b$10$PLACEHOLDER_HASH_REPLACE_ME_2', 'Member', 'Two', 'member', TRUE),
   ('member3@example.com', '$2b$10$PLACEHOLDER_HASH_REPLACE_ME_3', 'Member', 'Three', 'member', TRUE),
   ('member4@example.com', '$2b$10$PLACEHOLDER_HASH_REPLACE_ME_4', 'Member', 'Four', 'member', TRUE);
+
+-- Household account for family-wide documents (invoices, bills shared by all)
+INSERT INTO users (email, password_hash, first_name, last_name, role, can_login)
+SELECT NULL, NULL, 'Household', 'Account', 'member', FALSE
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM users WHERE first_name = 'Household' AND last_name = 'Account');
 
 -- Pet members (no email, cannot login)
 INSERT INTO users (email, password_hash, first_name, last_name, role, can_login)
@@ -74,4 +80,25 @@ INSERT IGNORE INTO tags (name, slug, color) VALUES
   ('Pending Review', 'pending-review', '#F59E0B'),
   ('Tax Relevant', 'tax-relevant', '#10B981'),
   ('Pet', 'pet', '#8B5CF6'),
-  ('Expiring Soon', 'expiring-soon', '#F97316');
+  ('Expiring Soon', 'expiring-soon', '#F97316'),
+  ('Paid', 'paid', '#10B981'),
+  ('Unpaid', 'unpaid', '#EF4444'),
+  ('Overdue', 'overdue', '#DC2626');
+
+-- Invoice custom field definitions (EAV — attached per-document, no schema change)
+INSERT IGNORE INTO custom_field_definitions (name, slug, data_type) VALUES
+  ('Invoice Number', 'invoice-number', 'string'),
+  ('Amount', 'amount', 'monetary'),
+  ('Currency', 'currency', 'string'),
+  ('VAT', 'vat', 'monetary'),
+  ('Paid Date', 'paid-date', 'date'),
+  ('Payment Method', 'payment-method', 'string');
+
+-- Matching rules to auto-detect invoices from email/PDF content
+INSERT IGNORE INTO matching_rules (entity_type, entity_id, match_pattern, matching_algorithm, is_active)
+SELECT 'category', id, 'invoice rechnung factura bill quittung', 'any_word', TRUE
+FROM categories WHERE slug = 'invoices';
+
+INSERT IGNORE INTO matching_rules (entity_type, entity_id, match_pattern, matching_algorithm, is_active)
+SELECT 'category', id, 'Rechnungsbetrag|Rechnungsnummer|Rechnungsdatum|invoice amount|invoice number', 'regex', TRUE
+FROM categories WHERE slug = 'invoices';

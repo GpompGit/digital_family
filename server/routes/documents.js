@@ -11,6 +11,51 @@ import { encryptFile, decryptFile, encryptText, decryptText, generateIV, isEncry
 
 const router = Router();
 
+/**
+ * Insert custom field values for a document.
+ * Accepts an object like { "amount": 127.50, "paid-date": "2024-03-15", "invoice-number": "INV-001" }
+ * Keys are custom_field_definitions slugs, values are the field values.
+ * If encryptionIv is set, string values are encrypted.
+ */
+async function insertCustomFields(documentId, fields, encryptionIv = null) {
+  const [definitions] = await pool.query('SELECT id, slug, data_type FROM custom_field_definitions');
+  const defMap = new Map(definitions.map(d => [d.slug, d]));
+
+  for (const [slug, value] of Object.entries(fields)) {
+    if (value === null || value === undefined || value === '') continue;
+    const def = defMap.get(slug);
+    if (!def) continue;
+
+    const row = { document_id: documentId, field_id: def.id, value_string: null, value_date: null, value_integer: null, value_boolean: null, value_decimal: null };
+    switch (def.data_type) {
+      case 'string':
+      case 'url':
+        row.value_string = encryptionIv ? encryptText(String(value), encryptionIv) : String(value);
+        break;
+      case 'date':
+        row.value_date = value;
+        break;
+      case 'integer':
+        row.value_integer = parseInt(value);
+        break;
+      case 'boolean':
+        row.value_boolean = value ? 1 : 0;
+        break;
+      case 'monetary':
+        row.value_decimal = parseFloat(value);
+        break;
+    }
+
+    await pool.query(
+      `INSERT INTO document_custom_fields (document_id, field_id, value_string, value_date, value_integer, value_boolean, value_decimal)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE value_string = VALUES(value_string), value_date = VALUES(value_date),
+         value_integer = VALUES(value_integer), value_boolean = VALUES(value_boolean), value_decimal = VALUES(value_decimal)`,
+      [row.document_id, row.field_id, row.value_string, row.value_date, row.value_integer, row.value_boolean, row.value_decimal]
+    );
+  }
+}
+
 // Helper: decrypt sensitive metadata fields if the document is encrypted
 function decryptDocumentMeta(doc) {
   if (!doc.is_encrypted || !doc.encryption_iv) return doc;
@@ -189,6 +234,36 @@ router.get('/:uuid', requireAuth, async (req, res) => {
     // Decrypt metadata if encrypted
     decryptDocumentMeta(doc);
 
+    // Load custom fields (invoice fields, etc.)
+    const [customFields] = await pool.query(
+      `SELECT cf.field_id, fd.name AS field_name, fd.slug AS field_slug, fd.data_type,
+              cf.value_string, cf.value_date, cf.value_integer, cf.value_boolean, cf.value_decimal
+       FROM document_custom_fields cf
+       JOIN custom_field_definitions fd ON cf.field_id = fd.id
+       WHERE cf.document_id = ?`,
+      [doc.id]
+    );
+
+    // Decrypt custom field string values if encrypted
+    if (doc.is_encrypted && doc.encryption_iv) {
+      for (const cf of customFields) {
+        if (cf.value_string && (cf.data_type === 'string' || cf.data_type === 'url')) {
+          try { cf.value_string = decryptText(cf.value_string, doc.encryption_iv); } catch (_) { /* skip */ }
+        }
+      }
+    }
+
+    doc.custom_fields = customFields;
+
+    // Load tags
+    const [tags] = await pool.query(
+      `SELECT t.id, t.name, t.slug, t.color
+       FROM document_tags dt JOIN tags t ON dt.tag_id = t.id
+       WHERE dt.document_id = ?`,
+      [doc.id]
+    );
+    doc.tags = tags;
+
     res.json(doc);
   } catch (err) {
     console.error('Document detail error:', err.message);
@@ -327,6 +402,13 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
       [uuid, req.session.userId, person_id, category_id, dbTitle, institution_id || null, asset_id || null, document_date || null, relativePath, req.file.size, req.file.originalname, dbNotes, expires_at || null, wantEncrypted ? 1 : 0, encryptionIv, wantPrivate ? 1 : 0]
     );
 
+    // Insert custom fields if provided (invoice fields: amount, paid_date, etc.)
+    const customFields = req.body.custom_fields ? JSON.parse(req.body.custom_fields) : null;
+    if (customFields && typeof customFields === 'object') {
+      const [[{ docId }]] = await pool.query('SELECT id AS docId FROM documents WHERE uuid = ?', [uuid]);
+      await insertCustomFields(docId, customFields, encryptionIv);
+    }
+
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
     await logAudit(req.session.userId, 'create', 'document', null, uuid, { title, person_id, category_id, is_encrypted: wantEncrypted, is_private: wantPrivate }, ip);
 
@@ -344,11 +426,11 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
 // PUT /api/documents/:uuid — update metadata (renames file if path-relevant fields change)
 router.put('/:uuid', requireAuth, async (req, res) => {
   try {
-    const { person_id, category_id, title, institution_id, asset_id, document_date, notes, expires_at } = req.body;
+    const { person_id, category_id, title, institution_id, asset_id, document_date, notes, expires_at, custom_fields } = req.body;
 
     // Fetch current document
     const [[doc]] = await pool.query(
-      'SELECT id, uuid, file_path FROM documents WHERE uuid = ?',
+      'SELECT id, uuid, file_path, is_encrypted, encryption_iv FROM documents WHERE uuid = ?',
       [req.params.uuid]
     );
     if (!doc) {
@@ -407,6 +489,13 @@ router.put('/:uuid', requireAuth, async (req, res) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // Update custom fields if provided
+    if (custom_fields && typeof custom_fields === 'object') {
+      // Delete existing custom fields and re-insert
+      await pool.query('DELETE FROM document_custom_fields WHERE document_id = ?', [doc.id]);
+      await insertCustomFields(doc.id, custom_fields, doc.is_encrypted ? doc.encryption_iv : null);
     }
 
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;

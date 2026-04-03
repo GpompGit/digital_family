@@ -5,6 +5,8 @@
     "back": "\u2190 Volver",
     "required": "Obligatorio",
     "select": "Seleccionar...",
+    "yes": "S\u00ed",
+    "no": "No",
     "dash": "\u2014"
   },
   "nav": {
@@ -174,6 +176,25 @@
       "filterTo": "Hasta",
       "system": "Sistema"
     }
+  },
+  "invoice": {
+    "title": "Detalles de factura",
+    "amount": "Monto",
+    "currency": "Moneda",
+    "invoiceNumber": "N\u00famero de factura",
+    "paidDate": "Fecha de pago",
+    "dueDate": "Fecha de vencimiento",
+    "paymentMethod": "M\u00e9todo de pago",
+    "paid": "Pagado",
+    "unpaid": "Pendiente",
+    "overdue": "Vencido",
+    "bankTransfer": "Transferencia bancaria",
+    "banktransfer": "Transferencia bancaria",
+    "creditCard": "Tarjeta de cr\u00e9dito",
+    "creditcard": "Tarjeta de cr\u00e9dito",
+    "cash": "Efectivo",
+    "paypal": "PayPal",
+    "other": "Otro"
   },
   "profile": {
     "title": "Mi perfil",

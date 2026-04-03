@@ -35,6 +35,7 @@ import pool from '../db/connection.js';
 import { buildDocumentPath, ensureDir, slugify } from '../utils/fileStorage.js';
 import { extractTextFromPdf } from '../utils/pdfTextExtract.js';
 import { applyMatchingRules } from '../utils/textMatcher.js';
+import { extractDatesFromText, extractAmountFromText, extractInvoiceNumber } from '../utils/dateParser.js';
 import { logAudit } from '../utils/audit.js';
 import { sendIngestionConfirmation } from '../utils/email.js';
 
@@ -225,6 +226,7 @@ async function handleParsedEmail(imap, uid, parsed) {
   // Clean up email subject for use as document title
   const emailSubject = cleanSubject(parsed.subject || 'Untitled Document');
   const emailDate = parsed.date ? formatDate(parsed.date) : null;
+  const emailBodyText = parsed.text || '';   // plain text body for invoice metadata extraction
 
   // Process each PDF attachment
   const storedDocs = [];
@@ -237,7 +239,7 @@ async function handleParsedEmail(imap, uid, parsed) {
     }
 
     try {
-      const doc = await storeAttachment(user, attachment, emailSubject, emailDate, pdfAttachments.length);
+      const doc = await storeAttachment(user, attachment, emailSubject, emailDate, pdfAttachments.length, emailBodyText);
       storedDocs.push(doc);
     } catch (e) {
       console.error(`Email ingestion: failed to store ${attachment.filename}:`, e.message);
@@ -261,7 +263,7 @@ async function handleParsedEmail(imap, uid, parsed) {
  * Store a single PDF attachment as a document.
  * Reuses the same storage flow as manual uploads.
  */
-async function storeAttachment(user, attachment, emailSubject, emailDate, attachmentCount) {
+async function storeAttachment(user, attachment, emailSubject, emailDate, attachmentCount, emailBodyText = '') {
   const uuid = uuidv4();
   const originalFilename = attachment.filename || `document-${uuid.slice(0, 8)}.pdf`;
 
@@ -337,6 +339,53 @@ async function storeAttachment(user, attachment, emailSubject, emailDate, attach
       'INSERT IGNORE INTO document_tags (document_id, tag_id) VALUES (?, ?)',
       [documentId, tagId]
     );
+  }
+
+  // Invoice metadata extraction: if classified as "invoices", extract custom fields
+  const [[invoiceCategory]] = await pool.query("SELECT id FROM categories WHERE slug = 'invoices'");
+  if (invoiceCategory && finalCategoryId === invoiceCategory.id) {
+    const fullText = `${emailBodyText} ${extractedText || ''}`;
+    const dates = extractDatesFromText(fullText);
+    const amountInfo = extractAmountFromText(fullText);
+    const invoiceNumber = extractInvoiceNumber(fullText);
+
+    // Load custom field definitions for invoice fields
+    const [fieldDefs] = await pool.query(
+      "SELECT id, slug, data_type FROM custom_field_definitions WHERE slug IN ('paid-date', 'amount', 'currency', 'invoice-number')"
+    );
+    const fieldMap = new Map(fieldDefs.map(f => [f.slug, f]));
+
+    // Insert extracted custom field values
+    const fieldsToInsert = [];
+    if (dates.paidDate && fieldMap.has('paid-date')) {
+      fieldsToInsert.push([documentId, fieldMap.get('paid-date').id, null, dates.paidDate, null, null, null]);
+    }
+    if (amountInfo?.amount && fieldMap.has('amount')) {
+      fieldsToInsert.push([documentId, fieldMap.get('amount').id, null, null, null, null, amountInfo.amount]);
+    }
+    if (amountInfo?.currency && fieldMap.has('currency')) {
+      fieldsToInsert.push([documentId, fieldMap.get('currency').id, amountInfo.currency, null, null, null, null]);
+    }
+    if (invoiceNumber && fieldMap.has('invoice-number')) {
+      fieldsToInsert.push([documentId, fieldMap.get('invoice-number').id, invoiceNumber, null, null, null, null]);
+    }
+
+    for (const row of fieldsToInsert) {
+      await pool.query(
+        'INSERT IGNORE INTO document_custom_fields (document_id, field_id, value_string, value_date, value_integer, value_boolean, value_decimal) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        row
+      );
+    }
+
+    // Auto-tag as "Paid" if paid date was found
+    if (dates.paidDate) {
+      const [[paidTag]] = await pool.query("SELECT id FROM tags WHERE slug = 'paid'");
+      if (paidTag) {
+        await pool.query('INSERT IGNORE INTO document_tags (document_id, tag_id) VALUES (?, ?)', [documentId, paidTag.id]);
+      }
+    }
+
+    console.log(`Email ingestion: invoice metadata extracted — amount=${amountInfo?.amount || 'N/A'}, paid=${dates.paidDate || 'N/A'}, invoiceNr=${invoiceNumber || 'N/A'}`);
   }
 
   // Audit log

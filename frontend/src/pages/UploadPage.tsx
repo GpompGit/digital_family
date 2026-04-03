@@ -21,7 +21,7 @@ interface UploadForm {
 export default function UploadPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors } } = useForm<UploadForm>();
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<UploadForm>();
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
@@ -29,6 +29,11 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+
+  // Invoice-specific fields (shown when category = "invoices")
+  const [invoiceFields, setInvoiceFields] = useState({ amount: '', currency: 'CHF', invoice_number: '', paid_date: '', payment_method: '' });
+  const selectedCategoryId = watch('category_id');
+  const isInvoice = categories.find(c => c.id === parseInt(selectedCategoryId))?.slug === 'invoices';
 
   useEffect(() => {
     Promise.all([getCategories(), getUsers(), getInstitutions(), getAssets()]).then(([cats, usrs, insts, asts]) => {
@@ -61,6 +66,17 @@ export default function UploadPage() {
       if (data.notes) formData.append('notes', data.notes);
       if (data.is_encrypted) formData.append('is_encrypted', 'true');
       if (data.is_private) formData.append('is_private', 'true');
+
+      // Append invoice custom fields if category is Invoices
+      if (isInvoice) {
+        const cf: Record<string, string | number> = {};
+        if (invoiceFields.amount) cf['amount'] = parseFloat(invoiceFields.amount);
+        if (invoiceFields.currency) cf['currency'] = invoiceFields.currency;
+        if (invoiceFields.invoice_number) cf['invoice-number'] = invoiceFields.invoice_number;
+        if (invoiceFields.paid_date) cf['paid-date'] = invoiceFields.paid_date;
+        if (invoiceFields.payment_method) cf['payment-method'] = invoiceFields.payment_method;
+        if (Object.keys(cf).length > 0) formData.append('custom_fields', JSON.stringify(cf));
+      }
 
       const result = await uploadDocument(formData);
       navigate(`/documents/${result.uuid}`);
@@ -199,6 +215,53 @@ export default function UploadPage() {
             {...register('notes')}
           />
         </div>
+
+        {/* Invoice-specific fields (shown when category = Invoices) */}
+        {isInvoice && (
+          <div className="border-t border-gray-100 pt-4 space-y-3">
+            <h3 className="text-sm font-medium text-gray-700">{t('invoice.title')}</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.amount')}</label>
+                <input type="number" step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={invoiceFields.amount} onChange={e => setInvoiceFields(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.currency')}</label>
+                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={invoiceFields.currency} onChange={e => setInvoiceFields(f => ({ ...f, currency: e.target.value }))}>
+                  <option value="CHF">CHF</option>
+                  <option value="EUR">EUR</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.invoiceNumber')}</label>
+              <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={invoiceFields.invoice_number} onChange={e => setInvoiceFields(f => ({ ...f, invoice_number: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.paidDate')}</label>
+                <input type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={invoiceFields.paid_date} onChange={e => setInvoiceFields(f => ({ ...f, paid_date: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.paymentMethod')}</label>
+                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={invoiceFields.payment_method} onChange={e => setInvoiceFields(f => ({ ...f, payment_method: e.target.value }))}>
+                  <option value="">{t('common.select')}</option>
+                  <option value="bank_transfer">{t('invoice.bankTransfer')}</option>
+                  <option value="credit_card">{t('invoice.creditCard')}</option>
+                  <option value="cash">{t('invoice.cash')}</option>
+                  <option value="paypal">{t('invoice.paypal')}</option>
+                  <option value="other">{t('invoice.other')}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Security toggles */}
         <div className="flex flex-col gap-2 border-t border-gray-100 pt-4">

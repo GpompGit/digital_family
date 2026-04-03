@@ -221,6 +221,16 @@ export default function DashboardPage() {
                     )}
                     <span>{formatDate(doc.document_date)}</span>
                     <span>{formatSize(doc.file_size)}</span>
+                    {doc.is_encrypted && (
+                      <span className="inline-flex items-center bg-gray-800 text-white px-2 py-0.5 rounded-full">
+                        {t('document.encrypted')}
+                      </span>
+                    )}
+                    {doc.is_private && (
+                      <span className="inline-flex items-center bg-red-50 text-red-700 px-2 py-0.5 rounded-full">
+                        {t('document.private')}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <span className="text-gray-300 text-lg shrink-0">&#8250;</span>

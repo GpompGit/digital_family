@@ -187,6 +187,61 @@ export default function DocumentPage() {
           )}
         </dl>
 
+        {/* Custom fields (invoice metadata, etc.) */}
+        {doc.custom_fields && doc.custom_fields.length > 0 && (
+          <div className="mt-4 border-t border-gray-100 pt-4">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">{t('invoice.title')}</h3>
+            <dl className="space-y-2">
+              {doc.custom_fields.map((cf: { field_slug: string; field_name: string; data_type: string; value_string: string | null; value_date: string | null; value_decimal: number | null; value_integer: number | null; value_boolean: boolean | null }) => {
+                let displayValue: string = '';
+                if (cf.data_type === 'monetary' && cf.value_decimal !== null) {
+                  // Find currency field if present
+                  const currField = doc.custom_fields?.find((f: { field_slug: string; value_string: string | null }) => f.field_slug === 'currency');
+                  const curr = currField?.value_string || 'CHF';
+                  displayValue = `${curr} ${cf.value_decimal.toFixed(2)}`;
+                } else if (cf.data_type === 'date' && cf.value_date) {
+                  displayValue = formatDate(cf.value_date);
+                } else if (cf.data_type === 'string' && cf.value_string) {
+                  // Translate payment method values
+                  if (cf.field_slug === 'payment-method') {
+                    const methodKey = `invoice.${cf.value_string.replace(/_/g, '')}` as string;
+                    displayValue = t(methodKey, cf.value_string);
+                  } else if (cf.field_slug === 'currency') {
+                    return null; // currency is shown alongside amount, skip separate row
+                  } else {
+                    displayValue = cf.value_string;
+                  }
+                } else if (cf.data_type === 'integer' && cf.value_integer !== null) {
+                  displayValue = String(cf.value_integer);
+                } else if (cf.data_type === 'boolean') {
+                  displayValue = cf.value_boolean ? t('common.yes') : t('common.no');
+                }
+
+                if (!displayValue) return null;
+                return (
+                  <div key={cf.field_slug} className="flex justify-between">
+                    <dt className="text-gray-500">{cf.field_name}</dt>
+                    <dd className="font-medium">{displayValue}</dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </div>
+        )}
+
+        {/* Tags */}
+        {doc.tags && doc.tags.length > 0 && (
+          <div className="mt-4 border-t border-gray-100 pt-4">
+            <div className="flex flex-wrap gap-1">
+              {doc.tags.map((tag: { id: number; name: string; slug: string; color: string }) => (
+                <span key={tag.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: `${tag.color}20`, color: tag.color }}>
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="mt-6 space-y-2">
           {/* Primary: View PDF */}

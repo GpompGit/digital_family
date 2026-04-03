@@ -5,6 +5,8 @@
     "back": "\u2190 Back",
     "required": "Required",
     "select": "Select...",
+    "yes": "Yes",
+    "no": "No",
     "dash": "\u2014"
   },
   "nav": {
@@ -174,6 +176,25 @@
       "filterTo": "To",
       "system": "System"
     }
+  },
+  "invoice": {
+    "title": "Invoice Details",
+    "amount": "Amount",
+    "currency": "Currency",
+    "invoiceNumber": "Invoice Number",
+    "paidDate": "Paid Date",
+    "dueDate": "Due Date",
+    "paymentMethod": "Payment Method",
+    "paid": "Paid",
+    "unpaid": "Unpaid",
+    "overdue": "Overdue",
+    "bankTransfer": "Bank Transfer",
+    "banktransfer": "Bank Transfer",
+    "creditCard": "Credit Card",
+    "creditcard": "Credit Card",
+    "cash": "Cash",
+    "paypal": "PayPal",
+    "other": "Other"
   },
   "profile": {
     "title": "My Profile",

@@ -5,6 +5,8 @@
     "back": "\u2190 Zur\u00fcck",
     "required": "Pflichtfeld",
     "select": "Ausw\u00e4hlen...",
+    "yes": "Ja",
+    "no": "Nein",
     "dash": "\u2014"
   },
   "nav": {
@@ -174,6 +176,25 @@
       "filterTo": "Bis",
       "system": "System"
     }
+  },
+  "invoice": {
+    "title": "Rechnungsdetails",
+    "amount": "Betrag",
+    "currency": "W\u00e4hrung",
+    "invoiceNumber": "Rechnungsnummer",
+    "paidDate": "Bezahlt am",
+    "dueDate": "F\u00e4llig am",
+    "paymentMethod": "Zahlungsmethode",
+    "paid": "Bezahlt",
+    "unpaid": "Unbezahlt",
+    "overdue": "\u00dcberf\u00e4llig",
+    "bankTransfer": "Bank\u00fcberweisung",
+    "banktransfer": "Bank\u00fcberweisung",
+    "creditCard": "Kreditkarte",
+    "creditcard": "Kreditkarte",
+    "cash": "Bargeld",
+    "paypal": "PayPal",
+    "other": "Andere"
   },
   "profile": {
     "title": "Mein Profil",
