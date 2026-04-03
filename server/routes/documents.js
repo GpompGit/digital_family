@@ -7,8 +7,22 @@ import { isSafeFilePath } from '../utils/validation.js';
 import { logAudit } from '../utils/audit.js';
 import { upload, getFilePath, buildDocumentPath, ensureDir, removeEmptyDir } from '../utils/fileStorage.js';
 import { uploadLimiter } from '../middleware/rateLimit.js';
+import { encryptFile, decryptFile, encryptText, decryptText, generateIV, isEncryptionConfigured } from '../utils/encryption.js';
 
 const router = Router();
+
+// Helper: decrypt sensitive metadata fields if the document is encrypted
+function decryptDocumentMeta(doc) {
+  if (!doc.is_encrypted || !doc.encryption_iv) return doc;
+  try {
+    if (doc.title) doc.title = decryptText(doc.title, doc.encryption_iv);
+    if (doc.notes) doc.notes = decryptText(doc.notes, doc.encryption_iv);
+    if (doc.extracted_text) doc.extracted_text = decryptText(doc.extracted_text, doc.encryption_iv);
+  } catch (err) {
+    console.error('Failed to decrypt document metadata:', err.message);
+  }
+  return doc;
+}
 
 // GET /api/documents — list with filters
 router.get('/', requireAuth, async (req, res) => {
@@ -19,6 +33,7 @@ router.get('/', requireAuth, async (req, res) => {
       SELECT d.id, d.uuid, d.person_id, d.title,
              d.document_date, d.file_size, d.original_filename, d.notes,
              d.expires_at, d.reminder_sent, d.version, d.parent_uuid,
+             d.is_encrypted, d.encryption_iv, d.is_private,
              d.created_at, d.updated_at,
              c.name AS category_name, c.slug AS category_slug,
              p.first_name AS person_first_name, p.last_name AS person_last_name,
@@ -40,7 +55,9 @@ router.get('/', requireAuth, async (req, res) => {
       joins.push('JOIN document_tags dt ON d.id = dt.document_id JOIN tags t ON dt.tag_id = t.id');
     }
 
-    sql += joins.join(' ') + ' WHERE 1=1';
+    // Privacy filter: private documents only visible to person_id
+    sql += joins.join(' ') + ' WHERE (d.is_private = FALSE OR d.person_id = ?)';
+    params.push(req.session.userId);
 
     if (category) {
       sql += ' AND c.slug = ?';
@@ -117,6 +134,9 @@ router.get('/', requireAuth, async (req, res) => {
 
     const [documents] = await pool.query(sql, params);
 
+    // Decrypt metadata for encrypted documents
+    for (const doc of documents) decryptDocumentMeta(doc);
+
     res.json({
       documents,
       pagination: {
@@ -139,6 +159,7 @@ router.get('/:uuid', requireAuth, async (req, res) => {
       `SELECT d.id, d.uuid, d.user_id, d.person_id, d.title,
               d.document_date, d.file_size, d.original_filename, d.notes,
               d.expires_at, d.reminder_sent, d.version, d.parent_uuid,
+              d.is_encrypted, d.encryption_iv, d.is_private,
               d.created_at, d.updated_at,
               c.name AS category_name, c.slug AS category_slug, c.id AS category_id,
               p.first_name AS person_first_name, p.last_name AS person_last_name,
@@ -159,7 +180,16 @@ router.get('/:uuid', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    res.json(documents[0]);
+    // Privacy check: private documents only visible to person_id
+    const doc = documents[0];
+    if (doc.is_private && doc.person_id !== req.session.userId) {
+      return res.status(403).json({ error: 'This document is private' });
+    }
+
+    // Decrypt metadata if encrypted
+    decryptDocumentMeta(doc);
+
+    res.json(doc);
   } catch (err) {
     console.error('Document detail error:', err.message);
     res.status(500).json({ error: 'Failed to load document' });
@@ -170,7 +200,7 @@ router.get('/:uuid', requireAuth, async (req, res) => {
 router.get('/:uuid/file', requireAuth, async (req, res) => {
   try {
     const [documents] = await pool.query(
-      'SELECT file_path, original_filename FROM documents WHERE uuid = ?',
+      'SELECT file_path, original_filename, is_encrypted, encryption_iv, is_private, person_id FROM documents WHERE uuid = ?',
       [req.params.uuid]
     );
 
@@ -178,21 +208,36 @@ router.get('/:uuid/file', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    // Defense-in-depth: validate the stored file path hasn't been tampered with
-    if (!isSafeFilePath(documents[0].file_path)) {
-      console.error('Suspicious file_path in database:', documents[0].file_path);
+    const doc = documents[0];
+
+    // Privacy check: private files only accessible to person_id
+    if (doc.is_private && doc.person_id !== req.session.userId) {
+      return res.status(403).json({ error: 'This document is private' });
+    }
+
+    if (!isSafeFilePath(doc.file_path)) {
+      console.error('Suspicious file_path in database:', doc.file_path);
       return res.status(400).json({ error: 'Invalid file path' });
     }
 
-    const filePath = getFilePath(documents[0].file_path);
+    const filePath = getFilePath(doc.file_path);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'File not found on disk' });
     }
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${documents[0].original_filename}"`);
-    fs.createReadStream(filePath).pipe(res);
+    res.setHeader('Content-Disposition', `inline; filename="${doc.original_filename}"`);
+
+    // If encrypted, decrypt the file before streaming
+    if (doc.is_encrypted && doc.encryption_iv) {
+      const encryptedBuffer = fs.readFileSync(filePath);
+      const decryptedBuffer = decryptFile(encryptedBuffer, doc.encryption_iv);
+      res.setHeader('Content-Length', decryptedBuffer.length);
+      res.end(decryptedBuffer);
+    } else {
+      fs.createReadStream(filePath).pipe(res);
+    }
   } catch (err) {
     console.error('File stream error:', err.message);
     res.status(500).json({ error: 'Failed to stream file' });
@@ -206,11 +251,20 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
       return res.status(400).json({ error: 'PDF file is required' });
     }
 
-    const { person_id, category_id, title, institution_id, asset_id, document_date, notes, expires_at } = req.body;
+    const { person_id, category_id, title, institution_id, asset_id, document_date, notes, expires_at, is_encrypted, is_private } = req.body;
 
     if (!person_id || !category_id || !title) {
       fs.unlinkSync(req.file.path);
       return res.status(400).json({ error: 'person_id, category_id, and title are required' });
+    }
+
+    // Parse boolean flags (form data sends strings)
+    const wantEncrypted = is_encrypted === 'true' || is_encrypted === true;
+    const wantPrivate = is_private === 'true' || is_private === true;
+
+    if (wantEncrypted && !isEncryptionConfigured()) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'Encryption is not configured on this server' });
     }
 
     const uuid = req.fileUuid;
@@ -251,14 +305,30 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
     ensureDir(dirPath);
     fs.renameSync(req.file.path, absolutePath);
 
+    // Encrypt file and metadata if requested
+    let encryptionIv = null;
+    let dbTitle = title;
+    let dbNotes = notes || null;
+
+    if (wantEncrypted) {
+      encryptionIv = generateIV();
+      // Encrypt the PDF file on disk
+      const plainBuffer = fs.readFileSync(absolutePath);
+      const encryptedBuffer = encryptFile(plainBuffer, encryptionIv);
+      fs.writeFileSync(absolutePath, encryptedBuffer);
+      // Encrypt metadata fields
+      dbTitle = encryptText(title, encryptionIv);
+      if (dbNotes) dbNotes = encryptText(dbNotes, encryptionIv);
+    }
+
     await pool.query(
-      `INSERT INTO documents (uuid, user_id, person_id, category_id, title, institution_id, asset_id, document_date, file_path, file_size, original_filename, notes, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [uuid, req.session.userId, person_id, category_id, title, institution_id || null, asset_id || null, document_date || null, relativePath, req.file.size, req.file.originalname, notes || null, expires_at || null]
+      `INSERT INTO documents (uuid, user_id, person_id, category_id, title, institution_id, asset_id, document_date, file_path, file_size, original_filename, notes, expires_at, is_encrypted, encryption_iv, is_private)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [uuid, req.session.userId, person_id, category_id, dbTitle, institution_id || null, asset_id || null, document_date || null, relativePath, req.file.size, req.file.originalname, dbNotes, expires_at || null, wantEncrypted ? 1 : 0, encryptionIv, wantPrivate ? 1 : 0]
     );
 
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
-    await logAudit(req.session.userId, 'create', 'document', null, uuid, { title, person_id, category_id }, ip);
+    await logAudit(req.session.userId, 'create', 'document', null, uuid, { title, person_id, category_id, is_encrypted: wantEncrypted, is_private: wantPrivate }, ip);
 
     res.status(201).json({ uuid, message: 'Document uploaded' });
   } catch (err) {

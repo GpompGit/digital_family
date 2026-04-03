@@ -66,6 +66,10 @@
     "expiresLabel": "Expiry date",
     "notesLabel": "Notes",
     "notesPlaceholder": "Optional notes...",
+    "encryptLabel": "Encrypt at rest",
+    "encryptHint": "(file + metadata encrypted on server)",
+    "privateLabel": "Private document",
+    "privateHint": "(only visible to the owner)",
     "submit": "Upload Document",
     "submitting": "Uploading...",
     "error": "Upload failed. Please try again."
@@ -95,7 +99,9 @@
     "deleteConfirm": "Delete this document? This cannot be undone.",
     "deleteError": "Failed to delete document",
     "deleteForbidden": "Only the uploader or an admin can delete this document",
-    "previewUnavailable": "PDF preview unavailable"
+    "previewUnavailable": "PDF preview unavailable",
+    "encrypted": "Encrypted",
+    "private": "Private"
   },
   "editDocument": {
     "title": "Edit Document",

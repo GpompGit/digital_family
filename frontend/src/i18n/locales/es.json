@@ -66,6 +66,10 @@
     "expiresLabel": "Fecha de vencimiento",
     "notesLabel": "Notas",
     "notesPlaceholder": "Notas opcionales...",
+    "encryptLabel": "Cifrar en reposo",
+    "encryptHint": "(archivo + metadatos cifrados en el servidor)",
+    "privateLabel": "Documento privado",
+    "privateHint": "(solo visible para el propietario)",
     "submit": "Subir documento",
     "submitting": "Subiendo...",
     "error": "Error al subir. Int\u00e9ntelo de nuevo."
@@ -95,7 +99,9 @@
     "deleteConfirm": "\u00bfEliminar este documento? Esta acci\u00f3n no se puede deshacer.",
     "deleteError": "No se pudo eliminar el documento",
     "deleteForbidden": "Solo quien subi\u00f3 el documento o un admin puede eliminarlo",
-    "previewUnavailable": "Vista previa no disponible"
+    "previewUnavailable": "Vista previa no disponible",
+    "encrypted": "Cifrado",
+    "private": "Privado"
   },
   "editDocument": {
     "title": "Editar documento",

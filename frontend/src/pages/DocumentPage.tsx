@@ -117,9 +117,21 @@ export default function DocumentPage() {
 
         {/* Title and category */}
         <h1 className="text-xl font-bold mb-1">{doc.title}</h1>
-        <span className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-xs mb-4">
-          {doc.category_name}
-        </span>
+        <div className="flex flex-wrap gap-1 mb-4">
+          <span className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-xs">
+            {doc.category_name}
+          </span>
+          {doc.is_encrypted && (
+            <span className="inline-flex items-center bg-gray-800 text-white px-2 py-0.5 rounded-full text-xs">
+              {t('document.encrypted')}
+            </span>
+          )}
+          {doc.is_private && (
+            <span className="inline-flex items-center bg-red-50 text-red-700 px-2 py-0.5 rounded-full text-xs">
+              {t('document.private')}
+            </span>
+          )}
+        </div>
 
         {/* Metadata */}
         <dl className="space-y-3 text-sm">

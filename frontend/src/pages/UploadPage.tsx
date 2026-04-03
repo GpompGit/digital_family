@@ -14,6 +14,8 @@ interface UploadForm {
   document_date: string;
   expires_at: string;
   notes: string;
+  is_encrypted: boolean;
+  is_private: boolean;
 }
 
 export default function UploadPage() {
@@ -57,6 +59,8 @@ export default function UploadPage() {
       if (data.document_date) formData.append('document_date', data.document_date);
       if (data.expires_at) formData.append('expires_at', data.expires_at);
       if (data.notes) formData.append('notes', data.notes);
+      if (data.is_encrypted) formData.append('is_encrypted', 'true');
+      if (data.is_private) formData.append('is_private', 'true');
 
       const result = await uploadDocument(formData);
       navigate(`/documents/${result.uuid}`);
@@ -194,6 +198,20 @@ export default function UploadPage() {
             placeholder={t('upload.notesPlaceholder')}
             {...register('notes')}
           />
+        </div>
+
+        {/* Security toggles */}
+        <div className="flex flex-col gap-2 border-t border-gray-100 pt-4">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" {...register('is_encrypted')} className="rounded border-gray-300" />
+            <span className="text-gray-700">{t('upload.encryptLabel')}</span>
+            <span className="text-xs text-gray-400">{t('upload.encryptHint')}</span>
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" {...register('is_private')} className="rounded border-gray-300" />
+            <span className="text-gray-700">{t('upload.privateLabel')}</span>
+            <span className="text-xs text-gray-400">{t('upload.privateHint')}</span>
+          </label>
         </div>
 
         <button

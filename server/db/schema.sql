@@ -259,6 +259,9 @@ CREATE TABLE IF NOT EXISTS documents (
   extracted_text MEDIUMTEXT DEFAULT NULL,   -- OCR text content (future feature)
   expires_at DATE DEFAULT NULL,             -- document expiry date (for reminders)
   reminder_sent BOOLEAN NOT NULL DEFAULT FALSE, -- has expiry reminder been sent?
+  is_encrypted BOOLEAN NOT NULL DEFAULT FALSE, -- file + metadata encrypted at rest (AES-256-GCM)
+  encryption_iv CHAR(32) DEFAULT NULL,        -- hex-encoded IV for decryption (unique per document)
+  is_private BOOLEAN NOT NULL DEFAULT FALSE,  -- visible ONLY to person_id (not even admin)
   version INT NOT NULL DEFAULT 1,           -- version number for versioned documents
   parent_uuid CHAR(36) DEFAULT NULL,        -- FK: original document UUID (for versions)
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

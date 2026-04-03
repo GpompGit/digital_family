@@ -117,6 +117,8 @@ export interface Document {
   extracted_text: string | null;     // OCR content (future feature)
   expires_at: string | null;         // document expiry date
   reminder_sent: boolean;
+  is_encrypted: boolean;              // file + metadata encrypted at rest
+  is_private: boolean;               // only visible to person_id
   version: number;
   parent_uuid: string | null;        // original document UUID (for versions)
   created_at: string;

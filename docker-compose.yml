@@ -55,6 +55,7 @@ services:
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
       - UPLOAD_DIR=/app/uploads  # path INSIDE the container (mapped to NAS below)
       - MAX_FILE_SIZE=${MAX_FILE_SIZE}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - PORT=3456
       # Email ingestion (IMAP) — forward emails to ingest documents automatically
       - IMAP_ENABLED=${IMAP_ENABLED:-false}

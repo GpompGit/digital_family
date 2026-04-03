@@ -66,6 +66,10 @@
     "expiresLabel": "Ablaufdatum",
     "notesLabel": "Notizen",
     "notesPlaceholder": "Optionale Notizen...",
+    "encryptLabel": "Verschl\u00fcsselt speichern",
+    "encryptHint": "(Datei + Metadaten auf dem Server verschl\u00fcsselt)",
+    "privateLabel": "Privates Dokument",
+    "privateHint": "(nur f\u00fcr den Besitzer sichtbar)",
     "submit": "Dokument hochladen",
     "submitting": "Wird hochgeladen...",
     "error": "Hochladen fehlgeschlagen. Bitte versuchen Sie es erneut."
@@ -95,7 +99,9 @@
     "deleteConfirm": "Dieses Dokument l\u00f6schen? Dies kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
     "deleteError": "Dokument konnte nicht gel\u00f6scht werden",
     "deleteForbidden": "Nur der Hochladende oder ein Admin kann dieses Dokument l\u00f6schen",
-    "previewUnavailable": "PDF-Vorschau nicht verf\u00fcgbar"
+    "previewUnavailable": "PDF-Vorschau nicht verf\u00fcgbar",
+    "encrypted": "Verschl\u00fcsselt",
+    "private": "Privat"
   },
   "editDocument": {
     "title": "Dokument bearbeiten",
