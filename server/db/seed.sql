@@ -15,27 +15,14 @@ INSERT IGNORE INTO categories (name, slug) VALUES
   ('Certificates', 'certificates'),
   ('Uncategorized', 'uncategorized');
 
--- Family members (update emails and passwords before deploying)
--- password_hash values are bcrypt placeholders — generate real hashes before first use
+-- Admin user — add more family members via the admin panel after first login
 INSERT IGNORE INTO users (email, password_hash, first_name, last_name, role, can_login) VALUES
-  ('member1@example.com', '$2b$10$PLACEHOLDER_HASH_REPLACE_ME_1', 'Member', 'One', 'admin', TRUE),
-  ('member2@example.com', '$2b$10$PLACEHOLDER_HASH_REPLACE_ME_2', 'Member', 'Two', 'member', TRUE),
-  ('member3@example.com', '$2b$10$PLACEHOLDER_HASH_REPLACE_ME_3', 'Member', 'Three', 'member', TRUE),
-  ('member4@example.com', '$2b$10$PLACEHOLDER_HASH_REPLACE_ME_4', 'Member', 'Four', 'member', TRUE);
+  ('g.pomphile@gmx.net', '$2b$10$jtvG8ngmWMjUmNJLN2.t7.zrQsX//K.UiV0bGYNeTJFe7jwlSSqn6', 'Guillermo', 'Pomphile', 'admin', TRUE);
 
 -- Household account for family-wide documents (invoices, bills shared by all)
 INSERT INTO users (email, password_hash, first_name, last_name, role, can_login)
 SELECT NULL, NULL, 'Household', 'Account', 'member', FALSE
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM users WHERE first_name = 'Household' AND last_name = 'Account');
-
--- Pet members (no email, cannot login)
-INSERT INTO users (email, password_hash, first_name, last_name, role, can_login)
-SELECT NULL, NULL, 'Whiskers', 'Family', 'member', FALSE
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM users WHERE first_name = 'Whiskers' AND last_name = 'Family');
-
-INSERT INTO users (email, password_hash, first_name, last_name, role, can_login)
-SELECT NULL, NULL, 'Mittens', 'Family', 'member', FALSE
-FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM users WHERE first_name = 'Mittens' AND last_name = 'Family');
 
 -- Default institutions (update before deploying)
 INSERT IGNORE INTO institutions (name, slug) VALUES
@@ -61,17 +48,6 @@ INSERT IGNORE INTO asset_attributes (asset_id, attribute_name, attribute_value) 
   (1, 'color', 'Black'),
   (2, 'address', 'Musterstrasse 42, 8001 Zürich'),
   (2, 'purchase_year', '2018');
-
--- Example pet attributes (Whiskers)
-INSERT INTO user_attributes (user_id, attribute_name, attribute_value)
-SELECT u.id, 'date_of_birth', '2019-03-15' FROM users u WHERE u.first_name = 'Whiskers' AND u.last_name = 'Family'
-ON DUPLICATE KEY UPDATE attribute_value = VALUES(attribute_value);
-INSERT INTO user_attributes (user_id, attribute_name, attribute_value)
-SELECT u.id, 'color', 'Orange Tabby' FROM users u WHERE u.first_name = 'Whiskers' AND u.last_name = 'Family'
-ON DUPLICATE KEY UPDATE attribute_value = VALUES(attribute_value);
-INSERT INTO user_attributes (user_id, attribute_name, attribute_value)
-SELECT u.id, 'breed', 'European Shorthair' FROM users u WHERE u.first_name = 'Whiskers' AND u.last_name = 'Family'
-ON DUPLICATE KEY UPDATE attribute_value = VALUES(attribute_value);
 
 -- Default tags
 INSERT IGNORE INTO tags (name, slug, color) VALUES
