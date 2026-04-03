@@ -41,6 +41,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3456;
 
+// Trust the first proxy (Cloudflare Tunnel). Without this, Express sees
+// all connections as HTTP (from cloudflared) and refuses to set secure cookies.
+app.set('trust proxy', 1);
+
 // -----------------------------------------------------------------------------
 // Session Store — saves user sessions in MariaDB instead of server memory.
 // Why? If the server restarts, users stay logged in. Without this, every
