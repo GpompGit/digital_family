@@ -400,7 +400,7 @@ CREATE INDEX idx_documents_version ON documents(parent_uuid, version);
 -- FULLTEXT index: enables natural language search across document titles and OCR text.
 -- MariaDB InnoDB supports FULLTEXT indexes from version 10.0.15+.
 -- Usage: SELECT * FROM documents WHERE MATCH(title, extracted_text) AGAINST('search terms' IN BOOLEAN MODE)
-ALTER TABLE documents ADD FULLTEXT INDEX ft_documents_search (title, extracted_text);
+ALTER TABLE documents ADD FULLTEXT INDEX ft_documents_search (title, extracted_text, notes);
 
 -- Audit log: filter by entity, user, or date
 CREATE INDEX idx_audit_entity ON audit_log(entity_type, entity_uuid);

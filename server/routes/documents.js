@@ -130,7 +130,7 @@ router.get('/', requireAuth, async (req, res) => {
     }
 
     if (q) {
-      sql += ' AND MATCH(d.title, d.extracted_text) AGAINST(? IN BOOLEAN MODE)';
+      sql += ' AND MATCH(d.title, d.extracted_text, d.notes) AGAINST(? IN BOOLEAN MODE)';
       params.push(q);
     }
 
