@@ -82,3 +82,6 @@ docker-compose up -d
 - **Never use `bcrypt`** — use `bcryptjs` (pure JavaScript, no native compilation)
 - Avoid any npm package that requires native compilation (node-gyp, C++ addons)
 - If a package has a pure JS alternative, prefer it
+- **`pdf-parse` v2 requires Node 20+** (bundles `pdfjs-dist` which needs it) — use lazy loading with graceful fallback on Node 18
+- Any package that bundles `pdfjs-dist` v5+ will fail on Node 18 — check engine requirements before adding dependencies
+- When a backend dependency requires Node 20+ but is optional, use lazy `import()` inside the function (not top-level) so the app doesn't crash on startup
