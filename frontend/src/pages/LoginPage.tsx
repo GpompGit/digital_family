@@ -50,7 +50,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(onSubmit)(e); }}>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             {t('login.emailLabel')}
           </label>
