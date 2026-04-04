@@ -213,8 +213,14 @@ app.use((err, req, res, next) => {
 // After the server is running, start the email ingestion job (if enabled).
 // This polls an IMAP mailbox for forwarded emails with PDF attachments.
 import { startEmailIngestion } from './jobs/emailIngestion.js';
+import { isEncryptionConfigured } from './utils/encryption.js';
 app.listen(PORT, () => {
   console.log(`Digital Family running on port ${PORT}`);
+
+  // Warn if encryption is not configured (users won't be able to encrypt documents)
+  if (!isEncryptionConfigured()) {
+    console.warn('Warning: ENCRYPTION_KEY not set — document encryption at rest is disabled');
+  }
 
   // Start email ingestion if configured
   if (process.env.IMAP_ENABLED === 'true') {

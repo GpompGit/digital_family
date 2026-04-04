@@ -321,6 +321,7 @@ router.get('/:uuid/file', requireAuth, async (req, res) => {
 
 // POST /api/documents — upload PDF + metadata
 router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, res) => {
+  let finalPath = null; // Track renamed file for cleanup on error
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'PDF file is required' });
@@ -337,6 +338,7 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
     const wantEncrypted = is_encrypted === 'true' || is_encrypted === true;
     const wantPrivate = is_private === 'true' || is_private === true;
 
+    // Check encryption config EARLY — before any file operations
     if (wantEncrypted && !isEncryptionConfigured()) {
       fs.unlinkSync(req.file.path);
       return res.status(400).json({ error: 'Encryption is not configured on this server' });
@@ -379,6 +381,7 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
     );
     ensureDir(dirPath);
     fs.renameSync(req.file.path, absolutePath);
+    finalPath = absolutePath; // Track for cleanup if later steps fail
 
     // Encrypt file and metadata if requested
     let encryptionIv = null;
@@ -424,9 +427,11 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
     res.status(201).json({ uuid, message: 'Document uploaded' });
   } catch (err) {
     console.error('Upload error:', err.message);
-    // Clean up temp file or final file on error
-    if (req.file) {
-      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    // Clean up: delete whichever file exists (final path after rename, or temp path before)
+    if (finalPath && fs.existsSync(finalPath)) {
+      fs.unlinkSync(finalPath);
+    } else if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
     }
     res.status(500).json({ error: 'Failed to upload document' });
   }
