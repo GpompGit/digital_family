@@ -3,8 +3,6 @@ import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-
-const api = axios.create({ baseURL: '/', withCredentials: true });
 import { useAuth } from '../context/AuthContext';
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
@@ -38,7 +36,7 @@ export default function ProfilePage() {
 
   async function load() {
     const url = isOwnProfile ? '/api/users/me' : `/api/users/${viewingOtherId}/profile`;
-    const { data } = await api.get(url);
+    const { data } = await axios.get(url);
     setProfile(data);
     setBasic({ first_name: data.first_name, last_name: data.last_name, birth_date: data.birth_date?.split('T')[0] || '' });
     setLoading(false);
@@ -47,7 +45,7 @@ export default function ProfilePage() {
   useEffect(() => { load(); }, []);
 
   async function saveBasic() {
-    await api.put('/api/users/me', basic);
+    await axios.put('/api/users/me', basic);
     toast.success(t('profile.saved'));
     await refresh();
   }
@@ -55,7 +53,7 @@ export default function ProfilePage() {
   async function changePassword() {
     if (pw.new_password !== pw.confirm) { toast.error(t('profile.passwordMismatch')); return; }
     try {
-      await api.put('/api/users/me/password', { current_password: pw.current_password, new_password: pw.new_password });
+      await axios.put('/api/users/me/password', { current_password: pw.current_password, new_password: pw.new_password });
       toast.success(t('profile.passwordChanged'));
       setPw({ current_password: '', new_password: '', confirm: '' });
     } catch (err: unknown) {
@@ -66,49 +64,49 @@ export default function ProfilePage() {
 
   // --- ADDRESS CRUD ---
   async function addAddress() {
-    await api.post('/api/users/me/addresses', { label: 'home', street: '', city: '', country: 'Switzerland' });
+    await axios.post('/api/users/me/addresses', { label: 'home', street: '', city: '', country: 'Switzerland' });
     await load();
   }
   async function updateAddress(id: number, data: Partial<Address>) {
-    await api.put(`/api/users/me/addresses/${id}`, data);
+    await axios.put(`/api/users/me/addresses/${id}`, data);
     await load();
   }
   async function deleteAddress(id: number) {
-    await api.delete(`/api/users/me/addresses/${id}`);
+    await axios.delete(`/api/users/me/addresses/${id}`);
     await load();
   }
 
   // --- CONTACT CRUD ---
   async function addContact() {
-    await api.post('/api/users/me/contacts', { contact_type: 'email', label: 'personal', value: '' });
+    await axios.post('/api/users/me/contacts', { contact_type: 'email', label: 'personal', value: '' });
     await load();
   }
   async function updateContact(id: number, data: Partial<Contact>) {
-    await api.put(`/api/users/me/contacts/${id}`, data);
+    await axios.put(`/api/users/me/contacts/${id}`, data);
     await load();
   }
   async function deleteContact(id: number) {
-    await api.delete(`/api/users/me/contacts/${id}`);
+    await axios.delete(`/api/users/me/contacts/${id}`);
     await load();
   }
 
   // --- IDENTITY DOC CRUD ---
   async function addIdentityDoc() {
-    await api.post('/api/users/me/identity-docs', { doc_type: 'passport', doc_number: '' });
+    await axios.post('/api/users/me/identity-docs', { doc_type: 'passport', doc_number: '' });
     await load();
   }
   async function updateIdentityDoc(id: number, data: Partial<IdentityDoc>) {
-    await api.put(`/api/users/me/identity-docs/${id}`, data);
+    await axios.put(`/api/users/me/identity-docs/${id}`, data);
     await load();
   }
   async function deleteIdentityDoc(id: number) {
-    await api.delete(`/api/users/me/identity-docs/${id}`);
+    await axios.delete(`/api/users/me/identity-docs/${id}`);
     await load();
   }
 
   // --- ATTRIBUTES ---
   async function saveAttributes(attrs: Record<string, string>) {
-    await api.put('/api/users/me/attributes', { attributes: attrs });
+    await axios.put('/api/users/me/attributes', { attributes: attrs });
     await load();
   }
 
