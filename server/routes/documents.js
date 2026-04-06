@@ -440,7 +440,7 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
 // PUT /api/documents/:uuid — update metadata (renames file if path-relevant fields change)
 router.put('/:uuid', requireAuth, async (req, res) => {
   try {
-    const { person_id, category_id, title, institution_id, asset_id, document_date, notes, expires_at, custom_fields } = req.body;
+    const { person_id, category_id, title, institution_id, asset_id, document_date, notes, expires_at, custom_fields, tag_ids } = req.body;
 
     // Fetch current document
     const [[doc]] = await pool.query(
@@ -505,15 +505,22 @@ router.put('/:uuid', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Document not found' });
     }
 
+    // Update tags if provided (replace all)
+    if (Array.isArray(tag_ids)) {
+      await pool.query('DELETE FROM document_tags WHERE document_id = ?', [doc.id]);
+      for (const tagId of tag_ids) {
+        await pool.query('INSERT IGNORE INTO document_tags (document_id, tag_id) VALUES (?, ?)', [doc.id, tagId]);
+      }
+    }
+
     // Update custom fields if provided
     if (custom_fields && typeof custom_fields === 'object') {
-      // Delete existing custom fields and re-insert
       await pool.query('DELETE FROM document_custom_fields WHERE document_id = ?', [doc.id]);
       await insertCustomFields(doc.id, custom_fields, doc.is_encrypted ? doc.encryption_iv : null);
     }
 
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
-    await logAudit(req.session.userId, 'update', 'document', null, req.params.uuid, { title, person_id, category_id }, ip);
+    await logAudit(req.session.userId, 'update', 'document', null, req.params.uuid, { title, person_id, category_id, tag_ids }, ip);
 
     res.json({ message: 'Document updated' });
   } catch (err) {

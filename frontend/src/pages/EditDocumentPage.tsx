@@ -3,8 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { getDocument, updateDocument, getCategories, getUsers, getInstitutions, getAssets } from '../services/api';
-import type { Category, User, Institution, Asset } from '../types';
+import { getDocument, updateDocument, getCategories, getUsers, getInstitutions, getAssets, getTags } from '../services/api';
+import type { Category, User, Institution, Asset, Tag } from '../types';
 
 interface EditForm {
   title: string;
@@ -26,18 +26,25 @@ export default function EditDocumentPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!uuid) return;
-    Promise.all([getDocument(uuid), getCategories(), getUsers(), getInstitutions(), getAssets()])
-      .then(([doc, cats, usrs, insts, asts]) => {
+    Promise.all([getDocument(uuid), getCategories(), getUsers(), getInstitutions(), getAssets(), getTags()])
+      .then(([doc, cats, usrs, insts, asts, tgs]) => {
         setCategories(cats);
         setUsers(usrs);
         setInstitutions(insts);
         setAssets(asts);
+        setTags(tgs);
+        // Pre-select existing tags
+        if (doc.tags) {
+          setSelectedTags(doc.tags.map((tag: Tag) => tag.id));
+        }
         reset({
           title: doc.title,
           person_id: String(doc.person_id),
@@ -58,7 +65,7 @@ export default function EditDocumentPage() {
     setSaving(true);
     setError('');
     try {
-      await updateDocument(uuid, data as unknown as Record<string, unknown>);
+      await updateDocument(uuid, { ...data, tag_ids: selectedTags } as unknown as Record<string, unknown>);
       toast.success(t('toast.documentUpdated'));
       navigate(`/documents/${uuid}`);
     } catch {
@@ -66,6 +73,10 @@ export default function EditDocumentPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function toggleTag(tagId: number) {
+    setSelectedTags(prev => prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]);
   }
 
   if (loading) {
@@ -180,6 +191,26 @@ export default function EditDocumentPage() {
             {...register('expires_at')}
           />
         </div>
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('document.tags')}</label>
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => toggleTag(tag.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${selectedTags.includes(tag.id) ? 'text-white border-transparent' : 'text-gray-600 border-gray-300 bg-white hover:bg-gray-50'}`}
+                  style={selectedTags.includes(tag.id) ? { backgroundColor: tag.color } : undefined}
+                >
+                  {tag.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.notesLabel')}</label>
