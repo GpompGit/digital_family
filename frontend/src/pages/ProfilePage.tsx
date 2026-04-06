@@ -63,8 +63,14 @@ export default function ProfilePage() {
   }
 
   // --- ADDRESS CRUD ---
-  async function addAddress() {
-    await axios.post('/api/users/me/addresses', { label: 'home', street: '', city: '', country: 'Switzerland' });
+  const [draftAddress, setDraftAddress] = useState<Address | null>(null);
+  function addAddress() {
+    setDraftAddress({ id: 0, label: 'home', street: '', city: '', state: null, zip: null, country: 'Switzerland', year_in: null, year_out: null });
+  }
+  async function saveDraftAddress() {
+    if (!draftAddress || !draftAddress.street || !draftAddress.city) return;
+    await axios.post('/api/users/me/addresses', draftAddress);
+    setDraftAddress(null);
     await load();
   }
   async function updateAddress(id: number, data: Partial<Address>) {
@@ -77,8 +83,14 @@ export default function ProfilePage() {
   }
 
   // --- CONTACT CRUD ---
-  async function addContact() {
-    await axios.post('/api/users/me/contacts', { contact_type: 'email', label: 'personal', value: '' });
+  const [draftContact, setDraftContact] = useState<Contact | null>(null);
+  function addContact() {
+    setDraftContact({ id: 0, contact_type: 'email', label: 'personal', value: '', is_primary: false });
+  }
+  async function saveDraftContact() {
+    if (!draftContact || !draftContact.value) return;
+    await axios.post('/api/users/me/contacts', draftContact);
+    setDraftContact(null);
     await load();
   }
   async function updateContact(id: number, data: Partial<Contact>) {
@@ -91,8 +103,14 @@ export default function ProfilePage() {
   }
 
   // --- IDENTITY DOC CRUD ---
-  async function addIdentityDoc() {
-    await axios.post('/api/users/me/identity-docs', { doc_type: 'passport', doc_number: '' });
+  const [draftIdentityDoc, setDraftIdentityDoc] = useState<IdentityDoc | null>(null);
+  function addIdentityDoc() {
+    setDraftIdentityDoc({ id: 0, doc_type: 'passport', doc_number: '', issuing_country: null, issue_date: null, expire_date: null, notes: null });
+  }
+  async function saveDraftIdentityDoc() {
+    if (!draftIdentityDoc || !draftIdentityDoc.doc_number) return;
+    await axios.post('/api/users/me/identity-docs', draftIdentityDoc);
+    setDraftIdentityDoc(null);
     await load();
   }
   async function updateIdentityDoc(id: number, data: Partial<IdentityDoc>) {
@@ -170,7 +188,7 @@ export default function ProfilePage() {
       <div className="bg-white rounded-xl shadow-sm p-6 space-y-3">
         <div className="flex justify-between items-center">
           <h2 className="font-semibold text-sm text-gray-500 uppercase">{t('profile.addresses')}</h2>
-          {isOwnProfile && <button onClick={addAddress} className="text-blue-600 text-xs hover:underline">+ {t('profile.addAddress')}</button>}
+          {isOwnProfile && !draftAddress && <button onClick={addAddress} className="text-blue-600 text-xs hover:underline">+ {t('profile.addAddress')}</button>}
         </div>
         {profile.addresses.map(addr => (
           <div key={addr.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
@@ -191,13 +209,32 @@ export default function ProfilePage() {
             </div>
           </div>
         ))}
+        {draftAddress && (
+          <div className="border border-blue-300 bg-blue-50/30 rounded-lg p-3 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <input autoFocus className={inputCls} placeholder={t('profile.street')} value={draftAddress.street} onChange={e => setDraftAddress(d => d ? { ...d, street: e.target.value } : d)} />
+              <input className={inputCls} placeholder={t('profile.city')} value={draftAddress.city} onChange={e => setDraftAddress(d => d ? { ...d, city: e.target.value } : d)} />
+              <input className={inputCls} placeholder={t('profile.zip')} value={draftAddress.zip || ''} onChange={e => setDraftAddress(d => d ? { ...d, zip: e.target.value } : d)} />
+              <input className={inputCls} placeholder={t('profile.state')} value={draftAddress.state || ''} onChange={e => setDraftAddress(d => d ? { ...d, state: e.target.value } : d)} />
+              <input className={inputCls} placeholder={t('profile.country')} value={draftAddress.country} onChange={e => setDraftAddress(d => d ? { ...d, country: e.target.value } : d)} />
+              <div className="flex gap-2">
+                <input type="number" className={inputCls} placeholder={t('profile.yearIn')} value={draftAddress.year_in || ''} onChange={e => setDraftAddress(d => d ? { ...d, year_in: parseInt(e.target.value) || null } : d)} />
+                <input type="number" className={inputCls} placeholder={t('profile.yearOut')} value={draftAddress.year_out || ''} onChange={e => setDraftAddress(d => d ? { ...d, year_out: parseInt(e.target.value) || null } : d)} />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setDraftAddress(null)} className="border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs hover:bg-gray-50">{t('admin.cancel')}</button>
+              <button onClick={saveDraftAddress} disabled={!draftAddress.street || !draftAddress.city} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50">{t('admin.save')}</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Contacts */}
       <div className="bg-white rounded-xl shadow-sm p-6 space-y-3">
         <div className="flex justify-between items-center">
           <h2 className="font-semibold text-sm text-gray-500 uppercase">{t('profile.contacts')}</h2>
-          {isOwnProfile && <button onClick={addContact} className="text-blue-600 text-xs hover:underline">+ {t('profile.addContact')}</button>}
+          {isOwnProfile && !draftContact && <button onClick={addContact} className="text-blue-600 text-xs hover:underline">+ {t('profile.addContact')}</button>}
         </div>
         {profile.contacts.map(c => (
           <div key={c.id} className="flex gap-2 items-center">
@@ -215,13 +252,34 @@ export default function ProfilePage() {
             {isOwnProfile && <button onClick={() => deleteContact(c.id)} className="text-red-500 text-sm px-1 hover:text-red-700">&times;</button>}
           </div>
         ))}
+        {draftContact && (
+          <div className="flex flex-col gap-2 border border-blue-300 bg-blue-50/30 rounded-lg p-3">
+            <div className="flex gap-2 items-center">
+              <select className={'px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'} value={draftContact.contact_type} onChange={e => setDraftContact(d => d ? { ...d, contact_type: e.target.value } : d)}>
+                <option value="email">{t('profile.contactEmail')}</option>
+                <option value="phone">{t('profile.contactPhone')}</option>
+                <option value="mobile">{t('profile.contactMobile')}</option>
+              </select>
+              <select className={'px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'} value={draftContact.label} onChange={e => setDraftContact(d => d ? { ...d, label: e.target.value } : d)}>
+                <option value="personal">{t('profile.labelPersonal')}</option>
+                <option value="work">{t('profile.labelWork')}</option>
+                <option value="emergency">{t('profile.labelEmergency')}</option>
+              </select>
+              <input autoFocus className={'flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'} value={draftContact.value} placeholder={t('profile.contactValue')} onChange={e => setDraftContact(d => d ? { ...d, value: e.target.value } : d)} />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setDraftContact(null)} className="border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs hover:bg-gray-50">{t('admin.cancel')}</button>
+              <button onClick={saveDraftContact} disabled={!draftContact.value} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50">{t('admin.save')}</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Identity Documents */}
       <div className="bg-white rounded-xl shadow-sm p-6 space-y-3">
         <div className="flex justify-between items-center">
           <h2 className="font-semibold text-sm text-gray-500 uppercase">{t('profile.identityDocs')}</h2>
-          {isOwnProfile && <button onClick={addIdentityDoc} className="text-blue-600 text-xs hover:underline">+ {t('profile.addIdentityDoc')}</button>}
+          {isOwnProfile && !draftIdentityDoc && <button onClick={addIdentityDoc} className="text-blue-600 text-xs hover:underline">+ {t('profile.addIdentityDoc')}</button>}
         </div>
         {profile.identity_docs.map(doc => (
           <div key={doc.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
@@ -248,6 +306,29 @@ export default function ProfilePage() {
             </div>
           </div>
         ))}
+        {draftIdentityDoc && (
+          <div className="border border-blue-300 bg-blue-50/30 rounded-lg p-3 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <select className={inputCls} value={draftIdentityDoc.doc_type} onChange={e => setDraftIdentityDoc(d => d ? { ...d, doc_type: e.target.value } : d)}>
+                <option value="passport">{t('profile.passport')}</option>
+                <option value="id_card">{t('profile.idCard')}</option>
+                <option value="driver_license">{t('profile.driverLicense')}</option>
+                <option value="residence_permit">{t('profile.residencePermit')}</option>
+                <option value="other">{t('profile.otherDoc')}</option>
+              </select>
+              <input autoFocus className={inputCls} placeholder={t('profile.docNumber')} value={draftIdentityDoc.doc_number} onChange={e => setDraftIdentityDoc(d => d ? { ...d, doc_number: e.target.value } : d)} />
+              <input className={inputCls} placeholder={t('profile.issuingCountry')} value={draftIdentityDoc.issuing_country || ''} onChange={e => setDraftIdentityDoc(d => d ? { ...d, issuing_country: e.target.value || null } : d)} />
+              <div className="flex gap-2">
+                <input type="date" className={inputCls} value={draftIdentityDoc.issue_date || ''} onChange={e => setDraftIdentityDoc(d => d ? { ...d, issue_date: e.target.value || null } : d)} />
+                <input type="date" className={inputCls} value={draftIdentityDoc.expire_date || ''} onChange={e => setDraftIdentityDoc(d => d ? { ...d, expire_date: e.target.value || null } : d)} />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setDraftIdentityDoc(null)} className="border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs hover:bg-gray-50">{t('admin.cancel')}</button>
+              <button onClick={saveDraftIdentityDoc} disabled={!draftIdentityDoc.doc_number} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50">{t('admin.save')}</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Key-Value Attributes (AHV, tax number, etc.) */}
