@@ -128,7 +128,10 @@ CREATE INDEX IF NOT EXISTS idx_user_addresses_user ON user_addresses(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_contacts_user ON user_contacts(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_identity_docs_user ON user_identity_docs(user_id);
 
--- 13. Seed new categories (if missing)
+-- 13. Seed "Not Assigned" institution as default
+INSERT IGNORE INTO institutions (name, slug) VALUES ('Not Assigned', 'not-assigned');
+
+-- 14. Seed new categories (if missing)
 INSERT IGNORE INTO categories (name, slug) VALUES ('Invoices', 'invoices');
 
 -- 14. Seed invoice custom field definitions

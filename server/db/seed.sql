@@ -26,6 +26,7 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM users WHERE first_name = 'Household' A
 
 -- Default institutions (update before deploying)
 INSERT IGNORE INTO institutions (name, slug) VALUES
+  ('Not Assigned', 'not-assigned'),
   ('General Hospital', 'general-hospital'),
   ('City Hall', 'city-hall'),
   ('Tax Office', 'tax-office'),
