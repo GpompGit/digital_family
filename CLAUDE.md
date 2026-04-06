@@ -1,5 +1,7 @@
 # Digital Family — Project Brief
 
+> **IMPORTANT:** At the start of each session, read `.claude/rules/synology-nas.md` for NAS-specific constraints (CPU, Docker version, Node.js version, package rules). Ignoring these rules leads to broken deployments.
+
 ## Overview
 
 A self-hosted family document management system for 4 family members and 2 pets. Users scan physical documents with their iPhone (using the built-in document scanner in Notes/Files) and upload the resulting PDFs through a mobile-friendly React UI. Each document is categorized, tagged with metadata (date, title, institution, person, tags, custom fields), and stored on the Synology NAS filesystem. The app provides fast filtering, full-text search (including future OCR content), document expiry reminders, versioning, auto-matching rules, and a full audit trail. Any family member can instantly find, view, or print a document from their phone.

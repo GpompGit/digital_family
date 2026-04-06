@@ -15,6 +15,8 @@
 - **Docker Compose:** v1.28.5 (Python-based `docker-compose` with hyphen, NOT `docker compose`)
 - **Docker Engine:** ~20.10.x
 - Always use `docker-compose` in all commands and scripts
+- `docker-compose cp` does NOT exist in v1.28.5 — use `docker cp` instead (e.g., `docker cp file.sql digital_family_db_1:/tmp/`)
+- `/usr/local/bin` may not be in `PATH` in Task Scheduler — add `export PATH=/usr/local/bin:$PATH`
 
 ## docker-compose.yml Rules
 
@@ -47,22 +49,40 @@
 - Always prefix scripts with:
   ```bash
   export HOME=/root
+  export PATH=/usr/local/bin:$PATH
   git config --global --add safe.directory /volume1/docker/digital_family
   ```
 - `$HOME` is not set in Task Scheduler context
+- `/usr/local/bin` (where `docker-compose` lives) is not in `PATH`
 - Git will reject operations without the safe.directory exception
 - Tasks must run as **root** user to access Docker socket
+- Passwords with special characters (`!`, `$`, etc.) must be wrapped in **single quotes** to prevent bash expansion
 
 ## Deploy Command Template
 
 ```bash
 export HOME=/root
+export PATH=/usr/local/bin:$PATH
 git config --global --add safe.directory /volume1/docker/digital_family
 cd /volume1/docker/digital_family
 git pull origin main
 docker-compose build --no-cache
 docker-compose up -d
 ```
+
+## Database Migration
+
+Schema changes are NOT applied automatically on rebuild — `docker-entrypoint-initdb.d`
+only runs on first container creation. For existing deployments, run migrations manually:
+
+```bash
+docker cp server/db/migrate-001.sql digital_family_db_1:/tmp/migrate.sql
+docker-compose exec -T db mysql -u root -p'YOUR_ROOT_PASSWORD' digital_family -e "source /tmp/migrate.sql"
+```
+
+- Use `docker cp` (NOT `docker-compose cp` — not available in v1.28.5)
+- Use single quotes around passwords with special characters
+- Container name is `digital_family_db_1` (project name + service + instance)
 
 ## Paths
 

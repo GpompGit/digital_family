@@ -9,6 +9,7 @@
 set -e
 
 export HOME=/root
+export PATH=/usr/local/bin:$PATH
 git config --global --add safe.directory /volume1/docker/digital_family
 
 cd /volume1/docker/digital_family
