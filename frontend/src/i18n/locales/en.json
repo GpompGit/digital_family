@@ -99,6 +99,8 @@
     "expiresLabel": "Expiry date",
     "notesLabel": "Notes",
     "notesPlaceholder": "Optional notes...",
+    "newInstitution": "Create new institution",
+    "newInstitutionPlaceholder": "Institution name",
     "encryptLabel": "Encrypt at rest",
     "encryptHint": "(file + metadata encrypted on server)",
     "privateLabel": "Private document",

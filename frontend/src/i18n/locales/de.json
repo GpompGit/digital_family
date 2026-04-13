@@ -99,6 +99,8 @@
     "expiresLabel": "Ablaufdatum",
     "notesLabel": "Notizen",
     "notesPlaceholder": "Optionale Notizen...",
+    "newInstitution": "Neue Institution erstellen",
+    "newInstitutionPlaceholder": "Name der Institution",
     "encryptLabel": "Verschl\u00fcsselt speichern",
     "encryptHint": "(Datei + Metadaten auf dem Server verschl\u00fcsselt)",
     "privateLabel": "Privates Dokument",

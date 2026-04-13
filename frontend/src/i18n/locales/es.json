@@ -99,6 +99,8 @@
     "expiresLabel": "Fecha de vencimiento",
     "notesLabel": "Notas",
     "notesPlaceholder": "Notas opcionales...",
+    "newInstitution": "Crear nueva instituci\u00f3n",
+    "newInstitutionPlaceholder": "Nombre de la instituci\u00f3n",
     "encryptLabel": "Cifrar en reposo",
     "encryptHint": "(archivo + metadatos cifrados en el servidor)",
     "privateLabel": "Documento privado",

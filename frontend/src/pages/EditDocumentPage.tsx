@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { getDocument, updateDocument, getCategories, getUsers, getInstitutions, getAssets, getTags } from '../services/api';
+import { getDocument, updateDocument, getCategories, getUsers, getInstitutions, createInstitution, getAssets, getTags } from '../services/api';
 import type { Category, User, Institution, Asset, Tag } from '../types';
 
 interface EditForm {
@@ -34,6 +34,8 @@ export default function EditDocumentPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [newInstitution, setNewInstitution] = useState('');
+  const [creatingInstitution, setCreatingInstitution] = useState(false);
 
   const selectedCategoryId = watch('category_id');
   const isInvoice = categories.find(c => c.id === parseInt(selectedCategoryId))?.slug === 'invoices';
@@ -164,6 +166,25 @@ export default function EditDocumentPage() {
             <option value="">{t('common.select')}</option>
             {institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
           </select>
+          {!creatingInstitution ? (
+            <button type="button" onClick={() => setCreatingInstitution(true)} className="text-blue-600 text-xs hover:underline mt-1">
+              + {t('upload.newInstitution')}
+            </button>
+          ) : (
+            <div className="flex gap-2 mt-2">
+              <input type="text" className={`flex-1 ${inputCls}`} placeholder={t('upload.newInstitutionPlaceholder')}
+                value={newInstitution} onChange={e => setNewInstitution(e.target.value)} />
+              <button type="button" className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700" onClick={async () => {
+                if (!newInstitution.trim()) return;
+                const inst = await createInstitution(newInstitution.trim());
+                setInstitutions(prev => [...prev, inst].sort((a, b) => a.name.localeCompare(b.name)));
+                setNewInstitution('');
+                setCreatingInstitution(false);
+                toast.success(t('toast.created'));
+              }}>{t('admin.save')}</button>
+              <button type="button" className="border border-gray-300 px-3 py-2 rounded-lg text-sm hover:bg-gray-50" onClick={() => { setCreatingInstitution(false); setNewInstitution(''); }}>{t('admin.cancel')}</button>
+            </div>
+          )}
         </div>
 
         <div>

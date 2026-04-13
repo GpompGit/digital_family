@@ -95,6 +95,11 @@ export async function getInstitutions(): Promise<Institution[]> {
   return data;
 }
 
+export async function createInstitution(name: string): Promise<Institution> {
+  const { data } = await api.post('/api/institutions', { name });
+  return data;
+}
+
 export async function getTags(): Promise<Tag[]> {
   const { data } = await api.get('/api/tags');
   return data;
