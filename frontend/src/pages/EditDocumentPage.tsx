@@ -17,20 +17,26 @@ interface EditForm {
   notes: string;
 }
 
+const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+
 export default function EditDocumentPage() {
   const { t } = useTranslation();
   const { uuid } = useParams<{ uuid: string }>();
   const navigate = useNavigate();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<EditForm>();
+  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<EditForm>();
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [invoiceFields, setInvoiceFields] = useState({ amount: '', currency: 'CHF', invoice_number: '', paid_date: '', payment_method: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const selectedCategoryId = watch('category_id');
+  const isInvoice = categories.find(c => c.id === parseInt(selectedCategoryId))?.slug === 'invoices';
 
   useEffect(() => {
     if (!uuid) return;
@@ -41,9 +47,20 @@ export default function EditDocumentPage() {
         setInstitutions(insts);
         setAssets(asts);
         setTags(tgs);
-        // Pre-select existing tags
         if (doc.tags) {
           setSelectedTags(doc.tags.map((tag: Tag) => tag.id));
+        }
+        // Load existing custom fields into invoice fields
+        if (doc.custom_fields) {
+          const cf: Record<string, string> = {};
+          for (const field of doc.custom_fields) {
+            if (field.field_slug === 'amount' && field.value_decimal != null) cf.amount = String(field.value_decimal);
+            if (field.field_slug === 'currency' && field.value_string) cf.currency = field.value_string;
+            if (field.field_slug === 'invoice-number' && field.value_string) cf.invoice_number = field.value_string;
+            if (field.field_slug === 'paid-date' && field.value_date) cf.paid_date = field.value_date.split('T')[0];
+            if (field.field_slug === 'payment-method' && field.value_string) cf.payment_method = field.value_string;
+          }
+          setInvoiceFields(prev => ({ ...prev, ...cf }));
         }
         reset({
           title: doc.title,
@@ -65,7 +82,21 @@ export default function EditDocumentPage() {
     setSaving(true);
     setError('');
     try {
-      await updateDocument(uuid, { ...data, tag_ids: selectedTags } as unknown as Record<string, unknown>);
+      // Build custom fields for invoices
+      const custom_fields: Record<string, string | number> = {};
+      if (isInvoice) {
+        if (invoiceFields.amount) custom_fields['amount'] = parseFloat(invoiceFields.amount);
+        if (invoiceFields.currency) custom_fields['currency'] = invoiceFields.currency;
+        if (invoiceFields.invoice_number) custom_fields['invoice-number'] = invoiceFields.invoice_number;
+        if (invoiceFields.paid_date) custom_fields['paid-date'] = invoiceFields.paid_date;
+        if (invoiceFields.payment_method) custom_fields['payment-method'] = invoiceFields.payment_method;
+      }
+
+      await updateDocument(uuid, {
+        ...data,
+        tag_ids: selectedTags,
+        custom_fields: Object.keys(custom_fields).length > 0 ? custom_fields : undefined
+      } as unknown as Record<string, unknown>);
       toast.success(t('toast.documentUpdated'));
       navigate(`/documents/${uuid}`);
     } catch {
@@ -109,88 +140,96 @@ export default function EditDocumentPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.titleLabel')}</label>
-          <input
-            id="title"
-            type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('title', { required: t('editDocument.titleRequired') })}
-          />
+          <input id="title" type="text" className={inputCls} {...register('title', { required: t('editDocument.titleRequired') })} />
           {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
         </div>
 
         <div>
           <label htmlFor="person_id" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.personLabel')}</label>
-          <select
-            id="person_id"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('person_id', { required: t('common.required') })}
-          >
-            {users.map(u => (
-              <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>
-            ))}
+          <select id="person_id" className={inputCls} {...register('person_id', { required: t('common.required') })}>
+            {users.map(u => <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>)}
           </select>
         </div>
 
         <div>
           <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.categoryLabel')}</label>
-          <select
-            id="category_id"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('category_id', { required: t('common.required') })}
-          >
-            {categories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
+          <select id="category_id" className={inputCls} {...register('category_id', { required: t('common.required') })}>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
 
         <div>
           <label htmlFor="institution_id" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.institutionLabel')}</label>
-          <select
-            id="institution_id"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('institution_id')}
-          >
+          <select id="institution_id" className={inputCls} {...register('institution_id')}>
             <option value="">{t('common.select')}</option>
-            {institutions.map(i => (
-              <option key={i.id} value={i.id}>{i.name}</option>
-            ))}
+            {institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
           </select>
         </div>
 
         <div>
           <label htmlFor="asset_id" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.assetLabel')}</label>
-          <select
-            id="asset_id"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('asset_id')}
-          >
+          <select id="asset_id" className={inputCls} {...register('asset_id')}>
             <option value="">{t('common.select')}</option>
-            {assets.map(a => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
+            {assets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </div>
 
         <div>
           <label htmlFor="document_date" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.dateLabel')}</label>
-          <input
-            id="document_date"
-            type="date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('document_date')}
-          />
+          <input id="document_date" type="date" className={inputCls} {...register('document_date')} />
         </div>
 
         <div>
           <label htmlFor="expires_at" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.expiresLabel')}</label>
-          <input
-            id="expires_at"
-            type="date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('expires_at')}
-          />
+          <input id="expires_at" type="date" className={inputCls} {...register('expires_at')} />
         </div>
+
+        {/* Invoice-specific fields (shown when category = Invoices) */}
+        {isInvoice && (
+          <div className="border-t border-gray-100 pt-4 space-y-3">
+            <h3 className="text-sm font-medium text-gray-700">{t('invoice.title')}</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.amount')}</label>
+                <input type="number" step="0.01" className={inputCls} value={invoiceFields.amount}
+                  onChange={e => setInvoiceFields(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.currency')}</label>
+                <select className={inputCls} value={invoiceFields.currency}
+                  onChange={e => setInvoiceFields(f => ({ ...f, currency: e.target.value }))}>
+                  <option value="CHF">CHF</option>
+                  <option value="EUR">EUR</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.invoiceNumber')}</label>
+              <input type="text" className={inputCls} value={invoiceFields.invoice_number}
+                onChange={e => setInvoiceFields(f => ({ ...f, invoice_number: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.paidDate')}</label>
+                <input type="date" className={inputCls} value={invoiceFields.paid_date}
+                  onChange={e => setInvoiceFields(f => ({ ...f, paid_date: e.target.value }))} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invoice.paymentMethod')}</label>
+                <select className={inputCls} value={invoiceFields.payment_method}
+                  onChange={e => setInvoiceFields(f => ({ ...f, payment_method: e.target.value }))}>
+                  <option value="">{t('common.select')}</option>
+                  <option value="bank_transfer">{t('invoice.bankTransfer')}</option>
+                  <option value="credit_card">{t('invoice.creditCard')}</option>
+                  <option value="cash">{t('invoice.cash')}</option>
+                  <option value="paypal">{t('invoice.paypal')}</option>
+                  <option value="other">{t('invoice.other')}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tags */}
         {tags.length > 0 && (
@@ -214,19 +253,10 @@ export default function EditDocumentPage() {
 
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.notesLabel')}</label>
-          <textarea
-            id="notes"
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            {...register('notes')}
-          />
+          <textarea id="notes" rows={3} className={`${inputCls} resize-none`} {...register('notes')} />
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
-        >
+        <button type="submit" disabled={saving} className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50">
           {saving ? t('editDocument.submitting') : t('editDocument.submit')}
         </button>
       </form>
