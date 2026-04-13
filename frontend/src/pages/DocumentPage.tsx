@@ -200,7 +200,7 @@ export default function DocumentPage() {
                   // Find currency field if present
                   const currField = doc.custom_fields?.find((f) => f.field_slug === 'currency');
                   const curr = currField?.value_string || 'CHF';
-                  displayValue = `${curr} ${cf.value_decimal.toFixed(2)}`;
+                  displayValue = `${curr} ${Number(cf.value_decimal).toFixed(2)}`;
                 } else if (cf.data_type === 'date' && cf.value_date) {
                   displayValue = formatDate(cf.value_date);
                 } else if (cf.data_type === 'string' && cf.value_string) {
