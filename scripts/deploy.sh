@@ -33,6 +33,7 @@ echo "Rebuilding app container..."
 docker-compose build --no-cache app
 
 echo "Restarting services..."
+docker-compose down
 docker-compose up -d
 
 echo "=== Deploy complete at $(date) ==="
