@@ -440,7 +440,7 @@ router.post('/', requireAuth, uploadLimiter, upload.single('file'), async (req, 
 // PUT /api/documents/:uuid — update metadata (renames file if path-relevant fields change)
 router.put('/:uuid', requireAuth, async (req, res) => {
   try {
-    const { person_id, category_id, title, institution_id, asset_id, document_date, notes, expires_at, custom_fields, tag_ids } = req.body;
+    const { person_id, category_id, title, institution_id, asset_id, document_date, notes, expires_at, custom_fields, tag_ids, is_encrypted, is_private } = req.body;
 
     // Fetch current document
     const [[doc]] = await pool.query(
@@ -494,11 +494,62 @@ router.put('/:uuid', requireAuth, async (req, res) => {
       removeEmptyDir(oldDirPath);
     }
 
+    // Handle encryption state transitions
+    // Client sends title/notes as PLAINTEXT (decrypted when loaded, user may have edited).
+    // If staying encrypted → re-encrypt metadata with existing IV
+    // If enabling encryption → generate new IV, encrypt file + metadata
+    // If disabling encryption → decrypt file on disk, save metadata as plaintext
+    const currentlyEncrypted = !!doc.is_encrypted;
+    const wantEncrypted = is_encrypted === undefined ? currentlyEncrypted : (is_encrypted === true || is_encrypted === 'true');
+    const wantPrivate = is_private === undefined ? undefined : (is_private === true || is_private === 'true');
+
+    if (wantEncrypted && !isEncryptionConfigured()) {
+      return res.status(400).json({ error: 'Encryption is not configured on this server' });
+    }
+
+    let newEncryptionIv = doc.encryption_iv;
+    let dbTitle = title;
+    let dbNotes = notes || null;
+
+    if (!currentlyEncrypted && wantEncrypted) {
+      // Enabling encryption: encrypt the file on disk + metadata
+      newEncryptionIv = generateIV();
+      const plain = fs.readFileSync(absolutePath);
+      fs.writeFileSync(absolutePath, encryptFile(plain, newEncryptionIv));
+      dbTitle = encryptText(title, newEncryptionIv);
+      if (dbNotes) dbNotes = encryptText(dbNotes, newEncryptionIv);
+    } else if (currentlyEncrypted && !wantEncrypted) {
+      // Disabling encryption: decrypt file, save metadata as plaintext
+      const encrypted = fs.readFileSync(absolutePath);
+      fs.writeFileSync(absolutePath, decryptFile(encrypted, doc.encryption_iv));
+      newEncryptionIv = null;
+    } else if (currentlyEncrypted && wantEncrypted) {
+      // Staying encrypted: re-encrypt metadata with existing IV
+      // (title/notes may have been edited)
+      dbTitle = encryptText(title, doc.encryption_iv);
+      if (dbNotes) dbNotes = encryptText(dbNotes, doc.encryption_iv);
+    }
+
+    // Build dynamic UPDATE — only update is_private if provided
+    const updateFields = [
+      'person_id = ?', 'category_id = ?', 'title = ?', 'institution_id = ?', 'asset_id = ?',
+      'document_date = ?', 'notes = ?', 'expires_at = ?', 'file_path = ?',
+      'is_encrypted = ?', 'encryption_iv = ?'
+    ];
+    const updateValues = [
+      person_id, category_id, dbTitle, institution_id || null, asset_id || null,
+      document_date || null, dbNotes, expires_at || null, relativePath,
+      wantEncrypted ? 1 : 0, newEncryptionIv
+    ];
+    if (wantPrivate !== undefined) {
+      updateFields.push('is_private = ?');
+      updateValues.push(wantPrivate ? 1 : 0);
+    }
+    updateValues.push(req.params.uuid);
+
     const [result] = await pool.query(
-      `UPDATE documents SET person_id = ?, category_id = ?, title = ?, institution_id = ?, asset_id = ?,
-       document_date = ?, notes = ?, expires_at = ?, file_path = ?
-       WHERE uuid = ?`,
-      [person_id, category_id, title, institution_id || null, asset_id || null, document_date || null, notes || null, expires_at || null, relativePath, req.params.uuid]
+      `UPDATE documents SET ${updateFields.join(', ')} WHERE uuid = ?`,
+      updateValues
     );
 
     if (result.affectedRows === 0) {
@@ -516,11 +567,11 @@ router.put('/:uuid', requireAuth, async (req, res) => {
     // Update custom fields if provided
     if (custom_fields && typeof custom_fields === 'object') {
       await pool.query('DELETE FROM document_custom_fields WHERE document_id = ?', [doc.id]);
-      await insertCustomFields(doc.id, custom_fields, doc.is_encrypted ? doc.encryption_iv : null);
+      await insertCustomFields(doc.id, custom_fields, wantEncrypted ? newEncryptionIv : null);
     }
 
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
-    await logAudit(req.session.userId, 'update', 'document', null, req.params.uuid, { title, person_id, category_id, tag_ids }, ip);
+    await logAudit(req.session.userId, 'update', 'document', null, req.params.uuid, { title, person_id, category_id, tag_ids, is_encrypted: wantEncrypted, is_private: wantPrivate }, ip);
 
     res.json({ message: 'Document updated' });
   } catch (err) {

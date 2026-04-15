@@ -23,7 +23,7 @@ export default function EditDocumentPage() {
   const { t } = useTranslation();
   const { uuid } = useParams<{ uuid: string }>();
   const navigate = useNavigate();
-  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<EditForm>();
+  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<EditForm>();
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
@@ -31,6 +31,8 @@ export default function EditDocumentPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [invoiceFields, setInvoiceFields] = useState({ amount: '', currency: 'CHF', invoice_number: '', paid_date: '', payment_method: '' });
+  const [isEncrypted, setIsEncrypted] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -52,6 +54,8 @@ export default function EditDocumentPage() {
         if (doc.tags) {
           setSelectedTags(doc.tags.map((tag: Tag) => tag.id));
         }
+        setIsEncrypted(!!doc.is_encrypted);
+        setIsPrivate(!!doc.is_private);
         // Load existing custom fields into invoice fields
         if (doc.custom_fields) {
           const cf: Record<string, string> = {};
@@ -97,6 +101,8 @@ export default function EditDocumentPage() {
       await updateDocument(uuid, {
         ...data,
         tag_ids: selectedTags,
+        is_encrypted: isEncrypted,
+        is_private: isPrivate,
         custom_fields: Object.keys(custom_fields).length > 0 ? custom_fields : undefined
       } as unknown as Record<string, unknown>);
       toast.success(t('toast.documentUpdated'));
@@ -177,7 +183,11 @@ export default function EditDocumentPage() {
               <button type="button" className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700" onClick={async () => {
                 if (!newInstitution.trim()) return;
                 const inst = await createInstitution(newInstitution.trim());
-                setInstitutions(prev => [...prev, inst].sort((a, b) => a.name.localeCompare(b.name)));
+                setInstitutions(prev => {
+                  const exists = prev.find(i => i.id === inst.id);
+                  return exists ? prev : [...prev, inst].sort((a, b) => a.name.localeCompare(b.name));
+                });
+                setValue('institution_id', String(inst.id));
                 setNewInstitution('');
                 setCreatingInstitution(false);
                 toast.success(t('toast.created'));
@@ -275,6 +285,20 @@ export default function EditDocumentPage() {
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">{t('editDocument.notesLabel')}</label>
           <textarea id="notes" rows={3} className={`${inputCls} resize-none`} {...register('notes')} />
+        </div>
+
+        {/* Security toggles */}
+        <div className="flex flex-col gap-2 border-t border-gray-100 pt-4">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" checked={isEncrypted} onChange={e => setIsEncrypted(e.target.checked)} className="rounded border-gray-300" />
+            <span className="text-gray-700">{t('upload.encryptLabel')}</span>
+            <span className="text-xs text-gray-400">{t('upload.encryptHint')}</span>
+          </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" checked={isPrivate} onChange={e => setIsPrivate(e.target.checked)} className="rounded border-gray-300" />
+            <span className="text-gray-700">{t('upload.privateLabel')}</span>
+            <span className="text-xs text-gray-400">{t('upload.privateHint')}</span>
+          </label>
         </div>
 
         <button type="submit" disabled={saving} className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50">

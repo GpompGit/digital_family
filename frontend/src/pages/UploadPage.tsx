@@ -22,7 +22,7 @@ interface UploadForm {
 export default function UploadPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<UploadForm>();
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<UploadForm>();
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
@@ -188,7 +188,11 @@ export default function UploadPage() {
               <button type="button" className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700" onClick={async () => {
                 if (!newInstitution.trim()) return;
                 const inst = await createInstitution(newInstitution.trim());
-                setInstitutions(prev => [...prev, inst].sort((a, b) => a.name.localeCompare(b.name)));
+                setInstitutions(prev => {
+                  const exists = prev.find(i => i.id === inst.id);
+                  return exists ? prev : [...prev, inst].sort((a, b) => a.name.localeCompare(b.name));
+                });
+                setValue('institution_id', String(inst.id));
                 setNewInstitution('');
                 setCreatingInstitution(false);
                 toast.success(t('toast.created'));
